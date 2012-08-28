@@ -1,14 +1,18 @@
 # CCapture.js - A library to capture canvas-based animations
 
-Library to capture animations created with HTML5 canvas at a fixed framerate. 
+CCapture.js is a library to help capturing animations created with HTML5 canvas at a fixed framerate. 
 
-Let's say that you finally have your amazing canvas-based animation running in your browser, be it 2D or 3D with the power of WebGL. You've been working hard to keep it fast and smooth. That means that, if you're using requestAnimationFrame, you're aiming for a framerate of 60fps, or, in other words, each frame is taking 16ms to render.
+An examples is probably worth a lot of words: [http://www.clicktorelease.com/code/conway3d_ccapture/](CCapture.js with Game of Life 3D).
 
-Now you want to record a video of it. Not a big deal, you can fire up a screen capture software that churns out a vide file and be done with it. But what if you wanted to create an HD movie of your animation, and it simply cannot be rendered at higher resolutions because frames start dropping? What if you wanted to put all the quality settings up for the video? What if you wanted to push that particle count to 10 millions?
+#### What is CCapture.js and why would I need it? ####
+
+Let's say that you finally have your amazing canvas-based animation running in your browser, be it 2D or 3D with the power of WebGL. You've been working hard to keep it fast and smooth. If you're using requestAnimationFrame you're aiming for a framerate of 60fps or, in other words, each frame is taking 16ms or less to render.
+
+Now you want to record a video of it. Not a big deal, you can fire up a screen capture software that churns out a video file and be done with it. But what if you wanted to create an HD movie of your animation, and it simply cannot be rendered at higher resolutions because frames start dropping? What if you wanted to put all the quality settings up for the video? What if you wanted to push that particle count to 10 millions?
 
 What if, indeed. What would happen is that you'd get a choppy video at best. At higher resolutions, fillrate is a bottleneck for most canvas-based animations. High quality settings or high number of elements may be only feasible on more powerful hardware.
 
-With ccapture.js you can record smooth videos at a fixed framerate for all these situations, because it doesn't run in realtime: it makes the animations run at a given, fixed framerate which can be specified. You can record animations at smooth and consistent 30 or 60fps even if each frame takes seconds to render. You can even take a 240fps capture and create motion blur with post-production software.
+With CCapture.js you can record smooth videos at a fixed framerate for all these situations, because it doesn't run in realtime: it makes the animations run at a given, fixed framerate which can be specified. You can record animations at smooth and consistent 30 or 60fps even if each frame takes seconds to render. You can even take a 240fps capture and create motion blur with post-production software.
 
 The only requirement is that you step your values per frame according to ellapsed time. In other words, don't increment your variables with a fixed value each frame, but use an ellapsed time delta to adjust those incrementts. CCapture.js works by hooking the common methods for obtaining that ellapsed time: Date.now(), setTimeout, requestAnimationFrame (and more to come, eventually), and making them behave like a constant time step is happening, fixed by the specified framerate.
 
@@ -18,7 +22,7 @@ Forks, pull requests and code critiques are welcome!
 
 #### Using the code ####
 
-Include CCapture.[min.]js and [Whammy.js](http://antimatter15.com/wp/2012/08/whammy-a-real-time-javascript-webm-encoder/). 
+Include CCapture[.min].js and [Whammy.js](http://antimatter15.com/wp/2012/08/whammy-a-real-time-javascript-webm-encoder/). 
 
 The lib uses [Whammy.js](http://antimatter15.com/wp/2012/08/whammy-a-real-time-javascript-webm-encoder/) to convert the animation frames into a WebM movie.
 
@@ -62,9 +66,9 @@ var videoURL = capturer.save();
 
 #### Limitations ####
 
-Right now CCapture.js only works on browsers that have a Canvas implementation.
-Also, Whammy.js doesn't seem to work on anything but Chrome right now.
-So, basically it's Chrome-only :(
+CCapture.js only works on browsers that have a Canvas implementation.
+Also, Whammy.js current version doesn't seem to work on anything but Chrome.
+So, basically it's Chrome-only for now :(
 
 #### License ####
 
