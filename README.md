@@ -2,7 +2,7 @@
 
 CCapture.js is a library to help capturing animations created with HTML5 canvas at a fixed framerate. 
 
-An examples is probably worth a lot of words: [http://www.clicktorelease.com/code/conway3d_ccapture/](CCapture.js with Game of Life 3D).
+An examples is probably worth a lot of words: [CCapture.js with Game of Life 3D](http://www.clicktorelease.com/code/conway3d_ccapture/).
 
 #### What is CCapture.js and why would I need it? ####
 
@@ -66,9 +66,9 @@ var videoURL = capturer.save();
 
 #### Limitations ####
 
-CCapture.js only works on browsers that have a Canvas implementation.
-Also, Whammy.js current version doesn't seem to work on anything but Chrome.
-So, basically it's Chrome-only for now :(
+CCapture.js only works on browsers that have a Canvas implementation..
+Also, Whammy.js current version only works on a browser that supports the image/webp format.
+So, basically it's Chrome-only for now :( If you want to help to make it Firefox, Opera or even Internet Explorer compatible, please do!
 
 #### License ####
 
