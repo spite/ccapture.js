@@ -20,6 +20,7 @@ function CCapture( settings ) {
 	var _oldSetTimeout = setTimeout,
 		_oldClearTimeout = clearTimeout,
 		_oldRequestAnimationFrame = requestAnimationFrame,
+		_oldNow = Date.now,
 		_oldGetTime = Date.prototype.getTime;
 	// Date.prototype._oldGetTime = Date.prototype.getTime;
 	
@@ -28,6 +29,9 @@ function CCapture( settings ) {
 		_log( 'Capturer start' );
 		_time = _date.getTime();
 		Date.prototype.getTime = function(){
+			return _time;
+		};
+		Date.now = function() {
 			return _time;
 		};
 		setTimeout = function( callback, time ) {
@@ -67,7 +71,8 @@ function CCapture( settings ) {
 		setTimeout = _oldSetTimeout;
 		clearTimeout = _oldClearTimeout;
 		requestAnimationFrame = _oldRequestAnimationFrame;
-		Date.prototype.getTime = _oldGetTime;	
+		Date.prototype.getTime = _oldGetTime;
+		Date.now = _oldNow;
 	}
 
 	function _capture( canvas ) {
