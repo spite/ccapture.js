@@ -81,7 +81,7 @@ function CCapture( settings ) {
 			_encoder.add( canvas );
 			_log( 'Frame saved' );
 		}
-		_oldSetTimeout( _process, 1 );
+        _oldRequestAnimationFrame( _process );
 		
 	}
 	
