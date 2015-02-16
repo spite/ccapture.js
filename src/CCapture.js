@@ -12,10 +12,11 @@ function CCapture( settings ) {
 		_capturing = false;
 
 	_settings.framerate = _settings.framerate || 60;
+	_settings.quality = _settings.quality || .8;
 	_verbose = _settings.verbose || false;
 	_step = 1000.0 / _settings.framerate;
 	
-	var _encoder = new Whammy.Video( _settings.framerate );
+	var _encoder = new Whammy.Video( _settings.framerate, _settings.quality );
 
 	var _oldSetTimeout = setTimeout,
 		_oldClearTimeout = clearTimeout,
@@ -79,7 +80,6 @@ function CCapture( settings ) {
 	
 		if( _capturing ) {
 			_encoder.add( canvas );
-			_log( 'Frame saved' );
 		}
         _oldRequestAnimationFrame( _process );
 		
@@ -107,7 +107,8 @@ function CCapture( settings ) {
 	function _save() {
 	
 		var output = _encoder.compile(); 
-		var url = (window.webkitURL || window.URL).createObjectURL(output);
+		var blob = new Blob( [ output ], { type: "octet/stream" } );
+		var url = window.URL.createObjectURL( blob );
 		return url;
 		
 	}
