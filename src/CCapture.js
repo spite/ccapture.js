@@ -147,9 +147,9 @@ CCGIFEncoder.prototype.save = function( callback ) {
 		callback(URL.createObjectURL(blob));
 	});
 
-	this.encoder.on( 'progress', function(p) {
-		console.log( p );;
-	});
+	if( this.settings.onProgress ) {
+		this.encoder.on( 'progress', this.settings.onProgress );
+	}
 
 	this.encoder.render();
 
