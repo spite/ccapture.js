@@ -16,32 +16,40 @@ With CCapture.js you can record smooth videos at a fixed framerate for all these
 
 The only requirement is that you step your values per frame according to ellapsed time. In other words, don't increment your variables with a fixed value each frame, but use an ellapsed time delta to adjust those incrementts. CCapture.js works by hooking the common methods for obtaining that ellapsed time: Date.now(), setTimeout, requestAnimationFrame (and more to come, eventually), and making them behave like a constant time step is happening, fixed by the specified framerate.
 
-CCapture is more or less [ryg's kkapture](http://www.farb-rausch.de/~fg/kkapture/) but for JavaScript and canvas. Right now is using [Whammy.js](http://antimatter15.com/wp/2012/08/whammy-a-real-time-javascript-webm-encoder/) to create a WebM movie, but other file formats could be exported.
+CCapture is more or less [ryg's kkapture](http://www.farb-rausch.de/~fg/kkapture/) but for JavaScript and canvas. 
+
+The library supports multiple export formats using modular encoders. Right now is using [Whammy.js](http://antimatter15.com/wp/2012/08/whammy-a-real-time-javascript-webm-encoder/) to create a WebM movie and [gifjs](http://jnordberg.github.io/gif.js/) to create animated GIFs.
 
 Forks, pull requests and code critiques are welcome!
 
 #### Using the code ####
 
-Include CCapture[.min].js and [Whammy.js](http://antimatter15.com/wp/2012/08/whammy-a-real-time-javascript-webm-encoder/). 
-
-The lib uses [Whammy.js](http://antimatter15.com/wp/2012/08/whammy-a-real-time-javascript-webm-encoder/) to convert the animation frames into a WebM movie.
+Include CCapture[.min].js and [Whammy.js](http://antimatter15.com/wp/2012/08/whammy-a-real-time-javascript-webm-encoder/) or [gifjs](http://jnordberg.github.io/gif.js/). 
 
 ```html
 <script src="CCapture.min.js"></script>
+<!-- Include Whammy if you want to export WebM -->
 <script src="Whammy.js"></script>
-````
+<!-- Include gifjs if you want to export GIF -->
+<script src="gif.js"></script>
+```
 
 To create a CCapture object, write:
 
 ```js
-var capturer = new CCapture();
+// Create a capturer that exports a WebM video
+var capturer = new CCapture( { format: 'webm' } );
+
+// Create a capturer that exports an animated GIF
+// Notices you have to specify the path to the gif.worker.js 
+var capturer = new CCapture( { format: 'gif', workersPath: 'js/' } );
 ```
 
 This creates a CCapture object to run at 60fps, non-verbose. You can tweak the object by setting parameters on the constructor:
 
 ```js
 var capturer = new CCapture( {
-	framerate: 120,
+	framerate: 60,
 	verbose: true
 } );
 ```
@@ -58,20 +66,23 @@ And then, in your render() method, after the frame is been drawn, call .capture(
 capturer.capture( canvas );
 ```
 
-That's all. Once you're done with the animation, you can call .save(). That will compose the video and return a URL that can be previewed or downloaded.
+That's all. Once you're done with the animation, you can call .stop and then .save(). That will compose the video and return a URL that can be previewed or downloaded.
 
 ```js
-var videoURL = capturer.save();
+capturer.stop();
+capturer.save( function( url ) { /* ... */ } );
 ```
 
 #### Limitations ####
 
 CCapture.js only works on browsers that have a Canvas implementation..
-Also, Whammy.js current version only works on a browser that supports the image/webp format.
-So, basically it's Chrome-only for now :( If you want to help to make it Firefox, Opera or even Internet Explorer compatible, please do!
+
+Whammy.js current version only works on a browser that supports the image/webp format. Exporting video is basically Chrome-only for now :( If you want to help to make it Firefox, Opera or even Internet Explorer compatible, please do!
+
+gif.js has some performance limitations, be careful if capturing a lot of frames.
 
 #### License ####
 
 MIT licensed
 
-Copyright (C) 2012 Jaume Sanchez Elias, http://www.clicktorelease.com
+Copyright (C) 2012-2015 Jaume Sanchez Elias, http://www.clicktorelease.com
