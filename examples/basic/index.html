@@ -99,18 +99,23 @@
 		<h1>CCapture.js example</h1><h2>Game of Life in 3D</h2>
 		<p>Example of <a href="#" >ccapture.js</a> using <a href="http://www.clicktorelease.com/code/conway3d/" >Game of Life in 3D</a>.</p>
 		<p>This is a simple example of how to add a few lines of code to capture video out of a canvas-based animation.</p>
+		<input type="radio" name="encoder" value="webm" checked="checked" >WebM</input>
+		<input type="radio" name="encoder" value="gif" >GIF</input>
+		
 		<a class="button" href="#" id="start-capturing-button" >Start recording</a>
 		<a class="button" href="#" id="download-video-button" >Stop recording and view video</a>
 	</div>
 	
 	<div id="container" ></div>
 	
-	<script type="text/javascript" src="js/CCapture.min.js"></script>
-	<script type="text/javascript" src="js/Whammy.js"></script>
 	<script type="text/javascript" src="js/Three.js"></script>
 	<script type="text/javascript" src="js/Tween.js"></script>
 	<script type="text/javascript" src="js/RequestAnimationFrame.js"></script>
 	<script type="text/javascript" src="js/Detector.js"></script>
+
+	<script type="text/javascript" src="js/CCapture.min.js"></script>
+	<script type="text/javascript" src="js/Whammy.js"></script>
+	<script type="text/javascript" src="js/gif.js"></script>
 	
 	<script type="text/javascript" >
 	
@@ -141,8 +146,6 @@
 	var cells = [];
 	var tweens = [];
 	var timeout;
-	var screenSaverTimeout;
-	var screenSaverEnabled = false;
 	var startTime = null;
 	var lastTime = null;
 	var ellapsedTime = 0;
@@ -221,16 +224,23 @@
 		
 		onWindowResize();
 		
-		var d = new Date();
-		startTime = d.getTime();
+		startTime = Date.now();
 		lastTime = startTime;
-		
-		capturer = new CCapture();
+	
+		capturer = null;
 		
 		var sCB = document.getElementById( 'start-capturing-button' ),
 			dVB = document.getElementById( 'download-video-button' );
 		
 		sCB.addEventListener( 'click', function( e ) {
+
+			capturer = new CCapture( { 
+				verbose: false, 
+				framerate: 60, 
+				format: document.querySelector('input[name="encoder"]:checked').value,
+				workersPath: 'js/'
+			} );
+
 			capturer.start();
 			this.style.display = 'none';
 			dVB.style.display = 'block';
@@ -238,8 +248,12 @@
 		}, false );
 		
 		dVB.addEventListener( 'click', function( e ) {
+			capturer.stop();
 			this.style.display = 'none';
-			this.setAttribute( 'href', capturer.save() );
+			//this.setAttribute( 'href',  );
+			capturer.save( function( blob ) {
+				window.location = blob;
+			});
 		}, false );
 		
 		animate();
@@ -314,8 +328,7 @@
 	
 	function render() {
 		
-		var cd = new Date();
-		var currentTime = cd.getTime();
+		var currentTime = Date.now();
 		ellapsedTime = currentTime - lastTime;
 		
 		if( !pause ) {
@@ -346,7 +359,7 @@
 			light2.position.set( dl * Math.sin( t ) * Math.cos( t ), dl * Math.sin( t ), dl * Math.cos( t ) ); 
 		}
 		renderer.render( scene, camera );
-		capturer.capture( renderer.domElement );
+		if( capturer ) capturer.capture( renderer.domElement );
 		
 		lastTime = currentTime;
 	}
