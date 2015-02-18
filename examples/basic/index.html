@@ -241,8 +241,9 @@
 		sCB.addEventListener( 'click', function( e ) {
 
 			capturer = new CCapture( { 
-				verbose: false, 
-				framerate: 60, 
+				verbose: true, 
+				framerate: 60,
+				quality: 80,
 				format: document.querySelector('input[name="encoder"]:checked').value,
 				workersPath: 'js/',
 				onProgress: function( p ) { progress.style.width = ( p * 100 ) + '%' }
@@ -337,7 +338,7 @@
 		
 		var currentTime = Date.now();
 		ellapsedTime = currentTime - lastTime;
-		
+
 		if( !pause ) {
 			for( var p = 0, m = cells.length; p < m; p++ ) {
 				cubes[ p ].materials[ 0 ].opacity = cubes[ p ].conway;
