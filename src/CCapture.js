@@ -1,3 +1,5 @@
+( function() { 
+
 function CCFrameEncoder() {
 
 }
@@ -11,7 +13,7 @@ function CCWebMEncoder( settings ) {
 
 	CCFrameEncoder.call( this );
 
-	settings.quality = settings.quality || .8;
+	settings.quality = ( settings.quality / 100 ) || .8;
 	
 	this.settings = settings;
 	this.encoder = new Whammy.Video( settings.framerate, settings.quality );
@@ -101,7 +103,7 @@ function CCGIFEncoder( settings ) {
 
 	CCFrameEncoder.call( this );
 
-	settings.quality = settings.quality || 6;
+	settings.quality = 31 - ( ( settings.quality * 30 / 100 ) || 10 );
 	settings.workers = settings.workers || 4;
 	this.settings = settings;
 
@@ -172,6 +174,8 @@ function CCapture( settings ) {
 	_verbose = _settings.verbose || false;
 	_settings.step = 1000.0 / _settings.framerate;
 	
+	_log( 'Step is set to ' + _settings.step + 'ms' );
+
 	var encoder;
 	switch( _settings.format ) {
 		case 'gif': _encoder = new CCGIFEncoder( _settings ); break;
@@ -252,10 +256,10 @@ function CCapture( settings ) {
 	
 	function _process() {
 	
-		_log( 'Incrementing time' );
 		_time += _settings.step;
 		_frameCount++;
-		
+		_log( 'Frame: ' + _frameCount );
+
 		for( var j = 0; j < _timeouts.length; j++ ) {
 			if( _time >= _timeouts[ j ].triggerTime ) {
 				_timeouts[ j ].callback();
@@ -278,7 +282,7 @@ function CCapture( settings ) {
 	function _log( message ) {
 		if( _verbose ) console.log( message );
 	}
-		
+
 	return {
 		start: _start,
 		capture: _capture,
@@ -286,3 +290,7 @@ function CCapture( settings ) {
 		save: _save
 	}
 }
+
+window.CCapture = CCapture;
+
+}) ();
