@@ -65,7 +65,12 @@ capturer.start();
 And then, in your render() method, after the frame is been drawn, call .capture() passing the canvas you want to capture.
 
 ```js
-capturer.capture( canvas );
+function render(){
+  // rendering stuff ...
+  capturer.capture( canvas );
+}
+
+requestAnimationFrame(render);
 ```
 
 That's all. Once you're done with the animation, you can call .stop and then .save(). That will compose the video and return a URL that can be previewed or downloaded.
