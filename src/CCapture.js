@@ -361,14 +361,14 @@ function CCapture( settings ) {
 	
 	function _process() {
 
-        _queued = false;
-
-		if ( !_encoder.safeToProceed() ) {
+		if ( !_queued || !_encoder.safeToProceed() ) {
 
 			return;
 
 		}
-	
+
+		_queued = false;
+
 		_time += _settings.step;
 		_frameCount++;
 		_log( 'Frame: ' + _frameCount );
