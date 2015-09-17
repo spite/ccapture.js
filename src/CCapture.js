@@ -2,6 +2,8 @@
 
 "use strict";
 
+var g_startTime = window.Date.now();
+
 function CCFrameEncoder() {
 
 	var _handlers = {};
@@ -385,7 +387,7 @@ function CCapture( settings ) {
         var cb =  _requestAnimationFrameCallback;
 		if( cb ) {
 			_requestAnimationFrameCallback = null;
-            cb();
+			cb( _time - g_startTime );
         }
 	}
 	
