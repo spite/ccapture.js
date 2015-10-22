@@ -18,9 +18,20 @@ With CCapture.js you can record smooth videos at a fixed framerate for all these
 
 The only requirement is that you step your values per frame according to ellapsed time. In other words, don't increment your variables with a fixed value each frame, but use an ellapsed time delta to adjust those incrementts. CCapture.js works by hooking the common methods for obtaining that ellapsed time: Date.now(), setTimeout, requestAnimationFrame (and more to come, eventually), and making them behave like a constant time step is happening, fixed by the specified framerate.
 
+Methods supported so far:
+
+- Date.now, Date.prototype.getTime
+- setTimeout, clearTimeout, setInterval (clearInterval pending)
+- requestAnimationFrame
+- performance.now
+- HTMLVideoElement.prototype.currentTime, HTMLAudioElement.currentTime
+
 CCapture is more or less [ryg's kkapture](http://www.farb-rausch.de/~fg/kkapture/) but for JavaScript and canvas. 
 
-The library supports multiple export formats using modular encoders. Right now is using [Whammy.js](http://antimatter15.com/wp/2012/08/whammy-a-real-time-javascript-webm-encoder/) to create a WebM movie and [gifjs](http://jnordberg.github.io/gif.js/) to create animated GIFs.
+The library supports multiple export formats using modular encoders (`CCFrameEncoder). 
+- `CCWebMEncoder` usses [Whammy.js](http://antimatter15.com/wp/2012/08/whammy-a-real-time-javascript-webm-encoder/) to create a WebM movie
+- `CCGIFEncoder` uses [gifjs](http://jnordberg.github.io/gif.js/) to create animated GIFs
+- `CCFFMpegServerEncoder` uses [ffmpegserver.js](https://github.com/greggman/ffmpegserver.js) to generate video on the server 
 
 Forks, pull requests and code critiques are welcome!
 
@@ -87,6 +98,10 @@ CCapture.js only works on browsers that have a Canvas implementation..
 Whammy.js current version only works on a browser that supports the image/webp format. Exporting video is basically Chrome-only for now :( If you want to help to make it Firefox, Opera or even Internet Explorer compatible, please do!
 
 gif.js has some performance limitations, be careful if capturing a lot of frames.
+
+#### Contributors ####
+
+Big thanks to [hugohil](https://github.com/hugohil) and [Greggman](https://github.com/greggman)!
 
 #### License ####
 
