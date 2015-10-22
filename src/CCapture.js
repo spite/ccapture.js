@@ -317,7 +317,7 @@ function CCapture( settings ) {
       if (!_queued) {
         // We use oldSetTimeout so we can run even when not the front tab.
         _queued = true;
-        _oldSetTimeout( _process, 16 );  // "1" might be fine too but I want to give the browser at least a moment
+        _oldSetTimeout( _process, 10 );  // "1" might be fine too but I want to give the browser at least a moment
       }
     }
 
