@@ -248,6 +248,7 @@ function CCapture( settings ) {
 		_date = new Date(),
 		_verbose,
 		_time,
+		_performanceTime,
 		_step,
         _encoder,
 		_timeouts = [],
@@ -279,10 +280,32 @@ function CCapture( settings ) {
 	_encoder.on('process', _process);
     _encoder.on('progress', _progress);
 
+    if ("performance" in window == false) {
+    	window.performance = {};
+    }
+
+	Date.now = (Date.now || function () {  // thanks IE8
+		return new Date().getTime();
+	});
+
+	if ("now" in window.performance == false){
+
+		var nowOffset = Date.now();
+
+		if (performance.timing && performance.timing.navigationStart){
+			nowOffset = performance.timing.navigationStart
+		}
+
+		window.performance.now = function now(){
+			return Date.now() - nowOffset;
+		}
+	}
+
 	var _oldSetTimeout = window.setTimeout,
 		_oldClearTimeout = window.clearTimeout,
 		_oldRequestAnimationFrame = window.requestAnimationFrame,
 		_oldNow = window.Date.now,
+		_oldPerformanceNow = window.performance.now,
 		_oldGetTime = window.Date.prototype.getTime;
 	// Date.prototype._oldGetTime = Date.prototype.getTime;
 	
@@ -298,6 +321,8 @@ function CCapture( settings ) {
 		
 		_log( 'Capturer start' );
 		_time = window.Date.now();
+		_performanceTime = window.performance.now();
+
 		window.Date.prototype.getTime = function(){
 			return _time;
 		};
@@ -328,6 +353,10 @@ function CCapture( settings ) {
 			_requestAnimationFrameCallback = callback;
             _queueCheck();
 		}
+		window.performance.now = function(){
+			return _performanceTime;
+		}
+
 	}
 	
 	function _start() {
@@ -349,6 +378,7 @@ function CCapture( settings ) {
 		window.requestAnimationFrame = _oldRequestAnimationFrame;
 		window.Date.prototype.getTime = _oldGetTime;
 		window.Date.now = _oldNow;
+		window.performance.now = _oldPerformanceNow;
 	}
 
 	function _capture( canvas ) {
@@ -370,6 +400,8 @@ function CCapture( settings ) {
 		}
 	
 		_time += _settings.step;
+		_performanceTime += _settings.step;
+
 		_frameCount++;
 		_log( 'Frame: ' + _frameCount );
 
