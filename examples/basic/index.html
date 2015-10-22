@@ -123,13 +123,9 @@
 	<script type="text/javascript" src="js/gif.js"></script>
 	
 	<script type="text/javascript" >
-	
+
 	var capturer;
-	var isUserInteracting = false, pause = false,
-	onMouseDownMouseX = 0, onMouseDownMouseY = 0,
-	lon = 45, onMouseDownLon = 0,
-	lat = 45, onMouseDownLat = 0,
-	phi = 0, theta = 0;
+	var lon = 45, lat = 45, phi = 0, theta = 0;
 	var d = 140;
 	
 	var container;
@@ -151,7 +147,6 @@
 	var cells = [];
 	var tweens = [];
 	var timeout;
-	var startTime = null;
 	var lastTime = null;
 	var ellapsedTime = 0;
 	
@@ -229,8 +224,7 @@
 		
 		onWindowResize();
 		
-		startTime = Date.now();
-		lastTime = startTime;
+		lastTime = Date.now();
 	
 		capturer = null;
 		
@@ -243,7 +237,7 @@
 			capturer = new CCapture( { 
 				verbose: true, 
 				framerate: 60,
-				quality: 80,
+				quality: 90,
 				format: document.querySelector('input[name="encoder"]:checked').value,
 				workersPath: 'js/',
 				onProgress: function( p ) { progress.style.width = ( p * 100 ) + '%' }
@@ -307,10 +301,6 @@
 	
 	function next() {
 	
-		if( pause ) {
-			return;
-		}
-		
 		var nextGen = [];
 		
 		var p = 0;
@@ -337,18 +327,18 @@
 	function render() {
 		
 		var currentTime = Date.now();
+		currentTime = performance.now();;
 		ellapsedTime = currentTime - lastTime;
 
-		if( !pause ) {
-			for( var p = 0, m = cells.length; p < m; p++ ) {
-				cubes[ p ].materials[ 0 ].opacity = cubes[ p ].conway;
-				cubes[ p ].rotation.y = Math.PI * cubes[ p ].conway;
-				var s = cubes[ p ].conway;
-				if( s < .001 ) s = .001;
-				cubes[ p ].scale.set( s, s, s );
-			}
+		for( var p = 0, m = cells.length; p < m; p++ ) {
+			cubes[ p ].materials[ 0 ].opacity = cubes[ p ].conway;
+			cubes[ p ].rotation.y = Math.PI * cubes[ p ].conway;
+			var s = cubes[ p ].conway;
+			if( s < .001 ) s = .001;
+			cubes[ p ].scale.set( s, s, s );
 		}
-		if( !isUserInteracting ) lon += .25 * ellapsedTime / ( 1000.0 / 60.0 );
+
+		lon += .25 * ellapsedTime / ( 1000.0 / 60.0 );
 		
 		lat = Math.max( - 85, Math.min( 85, lat ) );
 		phi = ( 90 - lat ) * Math.PI / 180;
@@ -358,14 +348,12 @@
 		camera.position.y = d * Math.cos( phi );
 		camera.position.z = d * Math.sin( phi ) * Math.sin( theta );
 		
-		if( !pause ) {
-			var dt = new Date();
-			var dl = 400;
-			var t = .0003 * dt.getTime();
-			light.position.set( camera.position.x, camera.position.y + 50, camera.position.z );//dl * Math.sin( t ), dl * Math.cos( t ), dl * Math.cos( t ) * Math.sin( t ) ); 
-			var t = .00025 * dt.getTime();
-			light2.position.set( dl * Math.sin( t ) * Math.cos( t ), dl * Math.sin( t ), dl * Math.cos( t ) ); 
-		}
+		var dl = 400;
+		var t = .0003 * currentTime;
+		light.position.set( camera.position.x, camera.position.y + 50, camera.position.z );//dl * Math.sin( t ), dl * Math.cos( t ), dl * Math.cos( t ) * Math.sin( t ) ); 
+		var t = .00025 * currentTime;
+		light2.position.set( dl * Math.sin( t ) * Math.cos( t ), dl * Math.sin( t ), dl * Math.cos( t ) ); 
+
 		renderer.render( scene, camera );
 		if( capturer ) capturer.capture( renderer.domElement );
 		
