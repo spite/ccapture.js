@@ -2,6 +2,8 @@
 
 "use strict";
 
+var g_startTime = window.Date.now();
+
 function CCFrameEncoder() {
 
 	var _handlers = {};
@@ -391,14 +393,14 @@ function CCapture( settings ) {
 	
 	function _process() {
 
-        _queued = false;
-
-		if ( !_encoder.safeToProceed() ) {
+		if ( !_queued || !_encoder.safeToProceed() ) {
 
 			return;
 
 		}
-	
+
+		_queued = false;
+
 		_time += _settings.step;
 		_performanceTime += _settings.step;
 
@@ -417,7 +419,7 @@ function CCapture( settings ) {
         var cb =  _requestAnimationFrameCallback;
 		if( cb ) {
 			_requestAnimationFrameCallback = null;
-            cb();
+			cb( _time - g_startTime );
         }
 	}
 	
