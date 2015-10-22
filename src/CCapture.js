@@ -311,6 +311,8 @@ function CCapture( settings ) {
 		_oldGetTime = window.Date.prototype.getTime;
 	// Date.prototype._oldGetTime = Date.prototype.getTime;
 	
+	var media = [];
+
     function _queueCheck() {
       if (!_queued) {
         // We use oldSetTimeout so we can run even when not the front tab.
@@ -359,6 +361,19 @@ function CCapture( settings ) {
 			return _performanceTime;
 		}
 
+		function hookCurrentTime() { 
+			if( !this._hooked ) {
+				this._hooked = true;
+				this._hookedTime = this.currentTime;
+				this.pause();
+				media.push( this );
+			}
+			return this._hookedTime;
+		}
+
+		Object.defineProperty( HTMLVideoElement.prototype, 'currentTime', { get: hookCurrentTime } )
+		Object.defineProperty( HTMLAudioElement.prototype, 'currentTime', { get: hookCurrentTime } )
+
 	}
 	
 	function _start() {
@@ -403,7 +418,9 @@ function CCapture( settings ) {
 
 		_time += _settings.step;
 		_performanceTime += _settings.step;
-
+		media.forEach( function( v ) {
+			v._hookedTime += _settings.step;
+		} );
 		_frameCount++;
 		_log( 'Frame: ' + _frameCount );
 
