@@ -254,6 +254,7 @@ function CCapture( settings ) {
 		_step,
         _encoder,
 		_timeouts = [],
+		_intervals = [],
 		_frameCount = 0,
 		_lastFrame = null,
 		_requestAnimationFrameCallback = null,
@@ -304,6 +305,7 @@ function CCapture( settings ) {
 	}
 
 	var _oldSetTimeout = window.setTimeout,
+		_oldSetInterval = window.setInterval,
 		_oldClearTimeout = window.clearTimeout,
 		_oldRequestAnimationFrame = window.requestAnimationFrame,
 		_oldNow = window.Date.now,
@@ -343,7 +345,7 @@ function CCapture( settings ) {
 			_log( 'Timeout set to ' + t.time );
             _queueCheck();
 			return t;
-		}
+		};
 		window.clearTimeout = function( id ) {
 			for( var j = 0; j < _timeouts.length; j++ ) {
 				if( _timeouts[ j ] == id ) {
@@ -352,14 +354,25 @@ function CCapture( settings ) {
 					continue;
 				}
 			}
-		}
+		};
+		window.setInterval = function( callback, time ) {
+			var t = { 
+				callback: callback, 
+				time: time,
+				triggerTime: _time + time
+			};
+			_intervals.push( t );
+			_log( 'Interval set to ' + t.time );
+	        _queueCheck();
+			return t;
+		};
 		window.requestAnimationFrame = function( callback ) {
 			_requestAnimationFrameCallback = callback;
             _queueCheck();
-		}
+		};
 		window.performance.now = function(){
 			return _performanceTime;
-		}
+		};
 
 		function hookCurrentTime() { 
 			if( !this._hooked ) {
@@ -369,7 +382,7 @@ function CCapture( settings ) {
 				media.push( this );
 			}
 			return this._hookedTime;
-		}
+		};
 
 		Object.defineProperty( HTMLVideoElement.prototype, 'currentTime', { get: hookCurrentTime } )
 		Object.defineProperty( HTMLAudioElement.prototype, 'currentTime', { get: hookCurrentTime } )
@@ -391,6 +404,7 @@ function CCapture( settings ) {
 	function _destroy() {
 		_log( 'Capturer stop' );
 		window.setTimeout = _oldSetTimeout;
+		window.setInterval = _oldSetInterval;
 		window.clearTimeout = _oldClearTimeout;
 		window.requestAnimationFrame = _oldRequestAnimationFrame;
 		window.Date.prototype.getTime = _oldGetTime;
@@ -429,6 +443,15 @@ function CCapture( settings ) {
 				_timeouts[ j ].callback();
 				console.log( 'timeout!' );
 				_timeouts.splice( j, 1 );
+				continue;
+			}
+		}
+
+		for( var j = 0; j < _intervals.length; j++ ) {
+			if( _time >= _intervals[ j ].triggerTime ) {
+				_intervals[ j ].callback();
+				_intervals[ j ].triggerTime += _intervals[ j ].time;
+				console.log( 'interval!' );
 				continue;
 			}
 		}
