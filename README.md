@@ -24,7 +24,7 @@ Methods supported so far:
 - `setTimeout`, `clearTimeout`, `setInterval` (`clearInterval` pending)
 - `requestAnimationFrame`
 - `performance.now`
-- `HTMLVideoElement.prototype.currentTime`, `HTMLAudioElement.currentTime`
+- `HTMLVideoElement.prototype.currentTime`, `HTMLAudioElement.prototype.currentTime`
 
 CCapture.js is more or less [ryg's kkapture](http://www.farb-rausch.de/~fg/kkapture/) but for JavaScript and `canvas`. 
 
