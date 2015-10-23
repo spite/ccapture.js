@@ -2,6 +2,8 @@
 
 "use strict";
 
+// https://developer.mozilla.org/en-US/Add-ons/Code_snippets/Timers
+
 var g_startTime = window.Date.now();
 
 function CCFrameEncoder() {
