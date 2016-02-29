@@ -118,7 +118,8 @@
 	<script type="text/javascript" src="js/RequestAnimationFrame.js"></script>
 	<script type="text/javascript" src="js/Detector.js"></script>
 
-	<script type="text/javascript" src="js/CCapture.min.js"></script>
+	<!--	<script type="text/javascript" src="js/CCapture.min.js"></script>-->
+	<script type="text/javascript" src="../../src/CCapture.js"></script>
 	<script type="text/javascript" src="js/Whammy.js"></script>
 	<script type="text/javascript" src="js/gif.js"></script>
 	
@@ -235,8 +236,10 @@
 		sCB.addEventListener( 'click', function( e ) {
 
 			capturer = new CCapture( { 
-				verbose: true, 
-				framerate: 60,
+				verbose: false, 
+				framerate: 24,
+				timeLimit: 90,
+				motionBlurFrames: 20,
 				quality: 90,
 				format: document.querySelector('input[name="encoder"]:checked').value,
 				workersPath: 'js/',
