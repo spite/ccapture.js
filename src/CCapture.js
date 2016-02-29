@@ -337,6 +337,7 @@ function CCapture( settings ) {
 		window.Date.now = function() {
 			return _time;
 		};
+		
 		window.setTimeout = function( callback, time ) {
 			var t = { 
 				callback: callback, 
