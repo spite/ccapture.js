@@ -380,7 +380,7 @@ function CCapture( settings ) {
 		function hookCurrentTime() { 
 			if( !this._hooked ) {
 				this._hooked = true;
-				this._hookedTime = this.currentTime;
+				this._hookedTime = this.currentTime || 0;
 				this.pause();
 				media.push( this );
 			}
