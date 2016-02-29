@@ -278,7 +278,7 @@ function CCapture( settings ) {
 
     var ctor = _encoders[ _settings.format ];
     if ( !ctor ) {
-      throw "Error: Incorrect or missing format: Valid formats are " + Object.keys(_encoders).join(", ");
+		throw "Error: Incorrect or missing format: Valid formats are " + Object.keys(_encoders).join(", ");
     }
     _encoder = new ctor( _settings );
 
