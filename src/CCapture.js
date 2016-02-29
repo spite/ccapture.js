@@ -495,7 +495,7 @@ function CCapture( settings ) {
 
     function _progress( progress ) {
 
-        _emit( 'progess', progress );
+        _emit( 'progress', progress );
 
     }
 
