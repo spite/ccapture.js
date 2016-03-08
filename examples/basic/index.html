@@ -118,16 +118,20 @@
 	<script type="text/javascript" src="js/RequestAnimationFrame.js"></script>
 	<script type="text/javascript" src="js/Detector.js"></script>
 
-	<!--	<script type="text/javascript" src="js/CCapture.min.js"></script>-->
-	<script type="text/javascript" src="../../src/CCapture.js"></script>
+	<!--<script type="text/javascript" src="../../src/CCapture.js"></script>
 	<script type="text/javascript" src="js/Whammy.js"></script>
-	<script type="text/javascript" src="js/gif.js"></script>
+	<script type="text/javascript" src="js/gif.js"></script>-->
+	<script type="text/javascript" src="http://localhost:9003/download.js"></script>
+	<script type="text/javascript" src="http://localhost:9003/tar.js"></script>
+	<script type="text/javascript" src="http://localhost:9003/gif.js"></script>
+	<script type="text/javascript" src="http://localhost:9003/Whammy.js"></script>
+	<script type="text/javascript" src="http://localhost:9003/CCapture.js"></script>
 	
 	<script type="text/javascript" >
 
 	var capturer;
 	var lon = 45, lat = 45, phi = 0, theta = 0;
-	var d = 140;
+	var d = 40;
 	
 	var container;
 	var camera, scene, renderer,
@@ -237,12 +241,15 @@
 
 			capturer = new CCapture( { 
 				verbose: false, 
-				framerate: 24,
-				timeLimit: 90,
-				motionBlurFrames: 20,
-				quality: 90,
+				display: true,
+				framerate: 30,
+				motionBlurFrames: 30,
+				quality: 100,
 				format: document.querySelector('input[name="encoder"]:checked').value,
 				workersPath: 'js/',
+				timeLimit: 2,
+				frameLimit: 0,
+				autoSaveTime: 0,
 				onProgress: function( p ) { progress.style.width = ( p * 100 ) + '%' }
 			} );
 
@@ -256,9 +263,7 @@
 			capturer.stop();
 			this.style.display = 'none';
 			//this.setAttribute( 'href',  );
-			capturer.save( function( blob ) {
-				window.location = blob;
-			});
+			capturer.save();
 		}, false );
 		
 		animate();
@@ -341,12 +346,13 @@
 			cubes[ p ].scale.set( s, s, s );
 		}
 
-		lon += .25 * ellapsedTime / ( 1000.0 / 60.0 );
+		lon += 1.5 * ellapsedTime / ( 1000.0 / 60.0 );
 		
 		lat = Math.max( - 85, Math.min( 85, lat ) );
 		phi = ( 90 - lat ) * Math.PI / 180;
 		theta = lon * Math.PI / 180;
 
+		d = 140 + 100 * Math.sin( .01 * currentTime );
 		camera.position.x = d * Math.sin( phi ) * Math.cos( theta );
 		camera.position.y = d * Math.cos( phi );
 		camera.position.z = d * Math.sin( phi ) * Math.sin( theta );

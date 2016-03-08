@@ -1,0 +1,130 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>CCapture.js example with Conway's Game of Life in 3D</title>
+		<meta charset="utf-8">	
+		<link rel="stylesheet" href="buttons.css" type="text/css" media="screen" title="no title" charset="utf-8">
+		<style type="text/css">
+		html {
+			height: 100%;
+		}
+		body {
+			margin: 0;
+			padding: 0;
+			background-color: #000;
+			color: #ffffff;
+			font-family: sans-serif;
+			font-size: 13px;
+			line-height: 20px;
+			height: 100%;
+			overflow: hidden
+		}
+		container{ 
+			position: absolute; 
+			left: 0; 
+			top: 0;
+			right: 0;
+			bottom: 0 
+		}
+		a {
+			color: #fff;
+			text-decoration: none;
+			border-bottom: 1px dotted #fff;
+		}
+		a:hover {
+			border-bottom: 1px solid #fff
+		}
+		#title {
+			z-index: 100;
+			position: absolute;
+			top: 20px;
+			width: 300px;
+			left: 20px;
+			background-color: rgba(0,0,0,0.2);
+			border-radius: 3px;
+			padding: 10px;
+			overflow: auto;
+			-webkit-transition: opacity 1s ease-out;
+			-moz-transition: opacity 1s ease-out;
+		}
+		#options{
+			position: absolute;
+			top: 20px;
+			width: 300px;
+			right: 20px;
+			background-color: rgba(0,0,0,0.2);
+			border-radius: 3px;
+			padding: 10px;
+			overflow: hidden;
+		}
+		h1{ 
+			font: 20px Georgia; 
+			margin: 0;
+		}
+		h2{ 
+			font: 16px Georgia; 
+			margin: 0;
+		}
+		#preloader{
+			width: 306px;
+			height: 36px;
+			position: absolute;
+			left: 50%;
+			top: 50%;
+			margin-left: -153px;
+			margin-top: -18px;
+			background-color: rgba(255,255,255,0.8);
+			border-radius: 3px;
+			-webkit-transition: opacity 1s ease-out;
+			-moz-transition: opacity 1s ease-out;
+		}
+		#bar{
+			height: 30px;
+			position: absolute;
+			left: 50%;
+			top: 50%;
+			margin-left: -150px;
+			margin-top: -15px;
+			background-color: rgba(0,0,0,0.8);
+			border-radius: 3px;
+		}
+		#download-video-button{
+			display: none;
+		}
+		#progress{ position: absolute; left: 0; top: 0; z-index: 100; height: 10px; background-color: #b70000;}
+		</style>
+	</head>
+	<body>
+	
+	<div id="title">
+		<h1>CCapture.js example</h1><h2>Game of Life in 3D</h2>
+		<p>Example of <a href="#" >ccapture.js</a> using <a href="http://www.clicktorelease.com/code/conway3d/" >Game of Life in 3D</a>.</p>
+		<p>This is a simple example of how to add a few lines of code to capture video out of a canvas-based animation.</p>
+		<input type="radio" name="encoder" value="webm" checked="checked" >WebM</input>
+		<input type="radio" name="encoder" value="gif" >GIF</input>
+		
+		<a class="button" href="#" id="start-capturing-button" >Start recording</a>
+		<a class="button" href="#" id="download-video-button" >Stop recording and view video</a>
+	</div>
+	
+	<div id="container" ></div>
+	
+	<div id="progress"></div>
+
+	<a href="https://github.com/spite/ccapture.js"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/652c5b9acfaddf3a9c326fa6bde407b87f7be0f4/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6f72616e67655f6666373630302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png"></a>
+
+	<script type="text/javascript" src="../../src/CCapture.js"></script>
+	<script type="text/javascript" src="js/Whammy.js"></script>
+	<script type="text/javascript" src="js/gif.js"></script>
+	
+	<script type="text/javascript" >
+			
+	function init() {
+	
+	}
+	
+	</script>
+	
+</body>
+	
+</html>
