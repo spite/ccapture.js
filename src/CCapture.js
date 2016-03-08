@@ -19,6 +19,9 @@ if (!HTMLCanvasElement.prototype.toBlob) {
  });
 }
  
+function pad( n ) {
+	return String("0000000" + n).slice(-7);
+}
 // https://developer.mozilla.org/en-US/Add-ons/Code_snippets/Timers
 
 var g_startTime = window.Date.now();
@@ -94,7 +97,7 @@ CCPNGEncoder.prototype.add = function( canvas ) {
 	canvas.toBlob( function( blob ) {
 		var fileReader = new FileReader();
 		fileReader.onload = function() {
-			this.tape.append( this.count + '.jpg', new Uint8Array( fileReader.result ) );
+			this.tape.append( pad( this.count ) + '.jpg', new Uint8Array( fileReader.result ) );
 
 			//if( this.settings.autoSaveTime > 0 && ( this.frames.length / this.settings.framerate ) >= this.settings.autoSaveTime ) {
 
@@ -154,11 +157,11 @@ CCWebMEncoder.prototype.add = function( canvas ) {
 
 	if( this.settings.autoSaveTime > 0 && ( this.frames.length / this.settings.framerate ) >= this.settings.autoSaveTime ) {
 		this.save( function( blob ) {
-			this.filename = this.baseFilename + '-part-' + this.part;
+			this.filename = this.baseFilename + '-part-' + pad( this.part );
 			download( blob, this.filename + this.extension, this.mimeType );
 			this.dispose();
 			this.part++;
-			this.filename = this.baseFilename + '-part-' + this.part;
+			this.filename = this.baseFilename + '-part-' + pad( this.part );
 			this.step();
 		}.bind( this ) )
 	} else {
@@ -168,6 +171,8 @@ CCWebMEncoder.prototype.add = function( canvas ) {
 }
 
 CCWebMEncoder.prototype.save = function( callback ) {
+
+	if( !this.frames.length ) return;
 
 	var webm = Whammy.fromImageArray( this.frames, this.settings.framerate )
 	var blob = new Blob( [ webm ], { type: "octet/stream" } );
