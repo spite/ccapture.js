@@ -435,7 +435,7 @@ function CCapture( settings ) {
 		_frameCount = 0,
 		_intermediateFrameCount = 0,
 		_lastFrame = null,
-		_requestAnimationFrameCallback = null,
+		_requestAnimationFrameCallbacks = [],
 		_capturing = false,
         _handlers = {};
 
@@ -521,9 +521,9 @@ function CCapture( settings ) {
 		_log( 'Capturer start' );
 
 		_startTime = window.Date.now();
-		_time = _startTime;
+		_time = _startTime + _settings.startTime;
 		_performanceStartTime = window.performance.now();
-		_performanceTime = _performanceStartTime;
+		_performanceTime = _performanceStartTime + _settings.startTime;
 
 		window.Date.prototype.getTime = function(){
 			return _time;
@@ -562,7 +562,7 @@ function CCapture( settings ) {
 	       return t;
 		};
 		window.requestAnimationFrame = function( callback ) {
-			_requestAnimationFrameCallback = callback;
+			_requestAnimationFrameCallbacks.push( callback );
 		};
 		window.performance.now = function(){
 			return _performanceTime;
@@ -595,9 +595,13 @@ function CCapture( settings ) {
 		_destroy();
 	}
 
+	function _call( fn, p ) {
+		_oldSetTimeout( fn, 0, p );
+	}
+
 	function _step() {
 		//_oldRequestAnimationFrame( _process );
-		_oldSetTimeout( _process, 0 );
+		_call( _process );
 	}
 	
 	function _destroy() {
@@ -704,9 +708,10 @@ function CCapture( settings ) {
 		
 		var step = 1000 / _settings.framerate;
 		var dt = ( _frameCount + _intermediateFrameCount / _settings.motionBlurFrames ) * step;
-		_time = _startTime + dt;
 
+		_time = _startTime + dt;
 		_performanceTime = _performanceStartTime + dt;
+		
 		media.forEach( function( v ) {
 			v._hookedTime = dt / 1000;
 		} );
@@ -716,7 +721,7 @@ function CCapture( settings ) {
 
 		for( var j = 0; j < _timeouts.length; j++ ) {
 			if( _time >= _timeouts[ j ].triggerTime ) {
-				_timeouts[ j ].callback();
+				_call( _timeouts[ j ].callback )
 				console.log( 'timeout!' );
 				_timeouts.splice( j, 1 );
 				continue;
@@ -725,34 +730,29 @@ function CCapture( settings ) {
 
 		for( var j = 0; j < _intervals.length; j++ ) {
 			if( _time >= _intervals[ j ].triggerTime ) {
-				_intervals[ j ].callback();
+				_call( _intervals[ j ].callback );
 				_intervals[ j ].triggerTime += _intervals[ j ].time;
 				console.log( 'interval!' );
 				continue;
 			}
 		}
 		
-        var cb =  _requestAnimationFrameCallback;
-		if( cb ) {
-			_requestAnimationFrameCallback = null;
-			cb( _time - g_startTime );
-        }
+		_requestAnimationFrameCallbacks.forEach( function( cb ) {
+     		_call( cb, _time - g_startTime );
+        } );
+        _requestAnimationFrameCallbacks = [];
+
 	}
 	
 	function _save( callback ) {
 
-		if( callback ) {
-			_encoder.save( callback );
-		} else {
-
-			_encoder.save( function( blob ) {
-				//var url = window.URL.createObjectURL( blob );
-				//window.location = url;
+		if( !callback ) {
+			callback = function( blob ) {
 				download( blob, _encoder.filename + _encoder.extension, _encoder.mimeType );
 				return false;
-			})
+			}
 		}
-
+		_encoder.save( callback );
 		
 	}
 	
