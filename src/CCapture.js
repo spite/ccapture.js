@@ -2,6 +2,10 @@
 
 "use strict";
 
+if( !('gc' in window ) ) {
+	window.gc = function(){}
+}
+
 if (!HTMLCanvasElement.prototype.toBlob) {
  Object.defineProperty(HTMLCanvasElement.prototype, 'toBlob', {
   value: function (callback, type, quality) {
@@ -624,7 +628,7 @@ function CCapture( settings ) {
 			bufferMotionBlur[ j + 1 ] = 0;
 			bufferMotionBlur[ j + 2 ] = 0;
 		}
-		//gc();
+		gc();
 
 	}
 
