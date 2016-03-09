@@ -104,63 +104,99 @@ function CCFrameEncoder( settings ) {
 
 }
 
-CCFrameEncoder.start = function(){};
-CCFrameEncoder.stop = function(){};
-CCFrameEncoder.add = function(){};
-CCFrameEncoder.save = function(){};
-CCFrameEncoder.dispose = function(){};
-CCFrameEncoder.safeToProceed = function(){ return true; };
-CCFrameEncoder.step = function() { console.log( 'Step not set!' ) }
+CCFrameEncoder.prototype.start = function(){};
+CCFrameEncoder.prototype.stop = function(){};
+CCFrameEncoder.prototype.add = function(){};
+CCFrameEncoder.prototype.save = function(){};
+CCFrameEncoder.prototype.dispose = function(){};
+CCFrameEncoder.prototype.safeToProceed = function(){ return true; };
+CCFrameEncoder.prototype.step = function() { console.log( 'Step not set!' ) }
 
-function CCPNGEncoder( settings ) {
+function CCTarEncoder( settings ) {
 
 	CCFrameEncoder.call( this, settings );
-
-	settings.quality = ( settings.quality / 100 ) || .8;
 	
 	this.extension = '.tar'
 	this.mimeType = 'application/x-tar'
+	this.fileExtension = '';
 
 	this.tape = null
 	this.count = 0;
 
 }
 
-CCPNGEncoder.prototype = Object.create( CCFrameEncoder );
+CCTarEncoder.prototype = Object.create( CCFrameEncoder.prototype );
 
-CCPNGEncoder.prototype.start = function(){
+CCTarEncoder.prototype.start = function(){
 
 	this.dispose();
 
 };
 
-CCPNGEncoder.prototype.add = function( canvas ) {
+CCTarEncoder.prototype.add = function( blob ) {
 
-	canvas.toBlob( function( blob ) {
-		var fileReader = new FileReader();
-		fileReader.onload = function() {
-			this.tape.append( pad( this.count ) + '.jpg', new Uint8Array( fileReader.result ) );
+	var fileReader = new FileReader();
+	fileReader.onload = function() {
+		this.tape.append( pad( this.count ) + this.fileExtension, new Uint8Array( fileReader.result ) );
 
-			//if( this.settings.autoSaveTime > 0 && ( this.frames.length / this.settings.framerate ) >= this.settings.autoSaveTime ) {
+		//if( this.settings.autoSaveTime > 0 && ( this.frames.length / this.settings.framerate ) >= this.settings.autoSaveTime ) {
 
-			this.count++;
-			this.step();
-		}.bind( this );
-		fileReader.readAsArrayBuffer(blob);
-	}.bind( this ), 'image/jpeg', 95 )
+		this.count++;
+		this.step();
+	}.bind( this );
+	fileReader.readAsArrayBuffer(blob);
 
 }
 
-CCPNGEncoder.prototype.save = function( callback ) {
+CCTarEncoder.prototype.save = function( callback ) {
 
 	callback( this.tape.save() );
 
 }
 
-CCPNGEncoder.prototype.dispose = function() {
+CCTarEncoder.prototype.dispose = function() {
 
 	this.tape = new Tar();
 	this.count = 0;
+
+}
+
+function CCPNGEncoder( settings ) {
+
+	CCTarEncoder.call( this, settings );
+
+	this.type = 'image/png';
+	this.fileExtension = '.png';
+
+}
+
+CCPNGEncoder.prototype = Object.create( CCTarEncoder.prototype );
+
+CCPNGEncoder.prototype.add = function( canvas ) {
+
+	canvas.toBlob( function( blob ) {
+		CCTarEncoder.prototype.add.call( this, blob );
+	}.bind( this ), this.type )
+
+}
+
+function CCJPEGEncoder( settings ) {
+
+	CCTarEncoder.call( this, settings );
+
+	this.type = 'image/jpeg';
+	this.fileExtension = '.jpg';
+	this.quality = ( settings.quality / 100 ) || .8;
+
+}
+
+CCJPEGEncoder.prototype = Object.create( CCTarEncoder.prototype );
+
+CCJPEGEncoder.prototype.add = function( canvas ) {
+
+	canvas.toBlob( function( blob ) {
+		CCTarEncoder.prototype.add.call( this, blob );
+	}.bind( this ), this.type, this.quality )
 
 }
 
@@ -190,7 +226,7 @@ function CCWebMEncoder( settings ) {
 
 }
 
-CCWebMEncoder.prototype = Object.create( CCFrameEncoder );
+CCWebMEncoder.prototype = Object.create( CCFrameEncoder.prototype );
 
 CCWebMEncoder.prototype.start = function( canvas ) {
 
@@ -261,7 +297,7 @@ function CCFFMpegServerEncoder( settings ) {
 
 }
 
-CCFFMpegServerEncoder.prototype = Object.create( CCFrameEncoder );
+CCFFMpegServerEncoder.prototype = Object.create( CCFrameEncoder.prototype );
 
 CCFFMpegServerEncoder.prototype.start = function() {
 
@@ -385,7 +421,7 @@ function CCGIFEncoder( settings ) {
 
 }
 
-CCGIFEncoder.prototype = Object.create( CCFrameEncoder );
+CCGIFEncoder.prototype = Object.create( CCFrameEncoder.prototype );
 
 CCGIFEncoder.prototype.add = function( canvas ) {
 
@@ -471,7 +507,7 @@ function CCapture( settings ) {
       webm: CCWebMEncoder,
       ffmpegserver: CCFFMpegServerEncoder,
       'png': CCPNGEncoder,
-      //'jpg': CCJPGEncoder
+      'jpg': CCJPEGEncoder
     };
 
     var ctor = _encoders[ _settings.format ];
