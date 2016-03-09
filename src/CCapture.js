@@ -172,6 +172,11 @@ CCPNGEncoder.prototype.dispose = function() {
 
 function CCWebMEncoder( settings ) {
 
+	var canvas = document.createElement( 'canvas' );
+	if( canvas.toDataURL( 'image/webp' ).substr(5,10) !== 'image/webp' ){
+		console.log( "WebP not supported - try another export format" )
+	}
+
 	CCFrameEncoder.call( this, settings );
 
 	settings.quality = ( settings.quality / 100 ) || .8;
