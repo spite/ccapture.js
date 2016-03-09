@@ -81,6 +81,7 @@ function download(data, strFileName, strMimeType) {
 			a.href = url;
 			a.setAttribute("download", fn);
 			a.innerHTML = "downloading...";
+			a.style.display = 'none';
 			D.body.appendChild(a);
 			setTimeout(function() {
 				a.click();
