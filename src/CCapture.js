@@ -595,7 +595,11 @@ function CCapture( settings ) {
 			};
 			_intervals.push( t );
 			_log( 'Interval set to ' + t.time );
-	       return t;
+			return t;
+		};
+		window.clearInterval = function( id ) {
+			_log( 'clear Interval' );
+			return null;
 		};
 		window.requestAnimationFrame = function( callback ) {
 			_requestAnimationFrameCallbacks.push( callback );
