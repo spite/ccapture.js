@@ -118,10 +118,7 @@
 	<script type="text/javascript" src="js/RequestAnimationFrame.js"></script>
 	<script type="text/javascript" src="js/Detector.js"></script>
 
-<!--	<script type="text/javascript" src="js/CCapture.min.js"></script>-->
-	<script type="text/javascript" src="../../src/CCapture.js"></script>
-	<script type="text/javascript" src="js/Whammy.js"></script>
-	<script type="text/javascript" src="js/gif.js"></script>
+	<script type="text/javascript" src="../../build/CCapture.all.min.js"></script>
 	
 	<script type="text/javascript" >
 	
@@ -263,9 +260,7 @@
 			capturer.stop();
 			this.style.display = 'none';
 			//this.setAttribute( 'href',  );
-			capturer.save( function( blob ) {
-				window.location = blob;
-			});
+			capturer.save();
 		}, false );
 
 	}

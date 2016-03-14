@@ -4,6 +4,7 @@
 		<title>CCapture.js example with Conway's Game of Life in 3D</title>
 		<meta charset="utf-8">	
 		<link rel="stylesheet" href="buttons.css" type="text/css" media="screen" title="no title" charset="utf-8">
+		<link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,700' rel='stylesheet' type='text/css'>
 		<style type="text/css">
 		html {
 			height: 100%;
@@ -13,13 +14,21 @@
 			padding: 0;
 			background-color: #000;
 			color: #ffffff;
-			font-family: sans-serif;
+			font-family: 'roboto condensed', sans-serif;
 			font-size: 13px;
 			line-height: 20px;
 			height: 100%;
 			overflow: hidden
 		}
-		container{ 
+		#scroller{
+			position: absolute; 
+			left: 0; 
+			top: 0;
+			right: 0;
+			bottom: 0;
+			overflow: scroll;
+		}
+		#container{ 
 			position: absolute; 
 			left: 0; 
 			top: 0;
@@ -58,11 +67,11 @@
 			overflow: hidden;
 		}
 		h1{ 
-			font: 20px Georgia; 
+			font-size: 20px; 
 			margin: 0;
 		}
 		h2{ 
-			font: 16px Georgia; 
+			font-size: 16px; 
 			margin: 0;
 		}
 		#preloader{
@@ -96,15 +105,27 @@
 	</head>
 	<body>
 	
-	<div id="title">
-		<h1>CCapture.js example</h1><h2>Game of Life in 3D</h2>
-		<p>Example of <a href="#" >ccapture.js</a> using <a href="http://www.clicktorelease.com/code/conway3d/" >Game of Life in 3D</a>.</p>
-		<p>This is a simple example of how to add a few lines of code to capture video out of a canvas-based animation.</p>
-		<input type="radio" name="encoder" value="webm" checked="checked" >WebM</input>
-		<input type="radio" name="encoder" value="gif" >GIF</input>
-		
-		<a class="button" href="#" id="start-capturing-button" >Start recording</a>
-		<a class="button" href="#" id="download-video-button" >Stop recording and view video</a>
+	<div id="scroller" >
+		<div id="title">
+			<h1>CCapture.js example</h1><h2>Game of Life in 3D</h2>
+			<p>Example of <a href="#" >ccapture.js</a> using <a href="http://www.clicktorelease.com/code/conway3d/" >Game of Life in 3D</a>.</p>
+			<p>This is a simple example of how to add a few lines of code to capture video out of a canvas-based animation.</p>
+			<p><b>Framerate</b><br/>
+				<input type="radio" name="framerate" id="encode-10" value="10" ></input> <label for="encode-10" >10FPS</label>
+				<input type="radio" name="framerate" id="encode-30" value="30" checked="checked" ></input></input> <label for="encode-30" >30FPS</label>
+				<input type="radio" name="framerate" id="encode-60" value="60" ></input></input> <label for="encode-60" >60FPS</label>
+				<input type="radio" name="framerate" id="encode-120" value="120" ></input></input> <label for="encode-120" >120FPS</label></p>
+			<p><b>Format</b><br/>
+				<input type="radio" name="encoder" id="encode-webm" value="webm" checked="checked" ></input> <label for="encode-webm" >WebM</label>
+				<input type="radio" name="encoder" id="encode-gif" value="gif" ></input></input> <label for="encode-gif" >GIF</label>
+				<input type="radio" name="encoder" id="encode-png" value="png" ></input></input> <label for="encode-png" >PNG</label>
+				<input type="radio" name="encoder" id="encode-jpg" value="jpg" ></input></input> <label for="encode-jpg" >JPEG</label></p>
+			<p><b>Other options</b><br/>
+				<input id="apply-motionblur" name="motion-blur" type="checkbox" /> <label for="apply-motionblur">Apply motion blur</label>
+			</p>
+			<a class="button" href="#" id="start-capturing-button" >Start recording</a>
+			<a class="button" href="#" id="download-video-button" >Stop recording and view capture</a>
+		</div>
 	</div>
 	
 	<div id="container" ></div>
@@ -113,19 +134,12 @@
 
 	<a href="https://github.com/spite/ccapture.js"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/652c5b9acfaddf3a9c326fa6bde407b87f7be0f4/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6f72616e67655f6666373630302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png"></a>
 
-	<script type="text/javascript" src="js/Three.js"></script>
-	<script type="text/javascript" src="js/Tween.js"></script>
-	<script type="text/javascript" src="js/RequestAnimationFrame.js"></script>
-	<script type="text/javascript" src="js/Detector.js"></script>
+	<script type="text/javascript" src="./js/Three.js"></script>
+	<script type="text/javascript" src="./js/Tween.js"></script>
+	<script type="text/javascript" src="./js/RequestAnimationFrame.js"></script>
+	<script type="text/javascript" src="./js/Detector.js"></script>
 
-	<!--<script type="text/javascript" src="../../src/CCapture.js"></script>
-	<script type="text/javascript" src="js/Whammy.js"></script>
-	<script type="text/javascript" src="js/gif.js"></script>-->
-	<script type="text/javascript" src="http://localhost:9003/download.js"></script>
-	<script type="text/javascript" src="http://localhost:9003/tar.js"></script>
-	<script type="text/javascript" src="http://localhost:9003/gif.js"></script>
-	<script type="text/javascript" src="http://localhost:9003/Whammy.js"></script>
-	<script type="text/javascript" src="http://localhost:9003/CCapture.js"></script>
+	<script type="text/javascript" src="../../build/CCapture.all.min.js"></script>
 	
 	<script type="text/javascript" >
 
@@ -239,15 +253,17 @@
 		
 		sCB.addEventListener( 'click', function( e ) {
 
+			var framerate = document.querySelector('input[name="framerate"]:checked').value;
+
 			capturer = new CCapture( { 
 				verbose: false, 
 				display: true,
-				framerate: 30,
-				motionBlurFrames: 30,
+				framerate: framerate,
+				motionBlurFrames: ( 960 / framerate ) * ( document.querySelector('input[name="motion-blur"]').checked ? 1 : 0 ),
 				quality: 100,
 				format: document.querySelector('input[name="encoder"]:checked').value,
 				workersPath: 'js/',
-				timeLimit: 2,
+				timeLimit: 4,
 				frameLimit: 0,
 				autoSaveTime: 0,
 				onProgress: function( p ) { progress.style.width = ( p * 100 ) + '%' }
