@@ -758,7 +758,7 @@ function CCapture( settings ) {
 		for( var j = 0; j < _timeouts.length; j++ ) {
 			if( _time >= _timeouts[ j ].triggerTime ) {
 				_call( _timeouts[ j ].callback )
-				console.log( 'timeout!' );
+				//console.log( 'timeout!' );
 				_timeouts.splice( j, 1 );
 				continue;
 			}
@@ -768,7 +768,7 @@ function CCapture( settings ) {
 			if( _time >= _intervals[ j ].triggerTime ) {
 				_call( _intervals[ j ].callback );
 				_intervals[ j ].triggerTime += _intervals[ j ].time;
-				console.log( 'interval!' );
+				//console.log( 'interval!' );
 				continue;
 			}
 		}
