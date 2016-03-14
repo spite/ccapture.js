@@ -503,11 +503,11 @@ function CCapture( settings ) {
 	_log( 'Step is set to ' + _settings.step + 'ms' );
 
     var _encoders = {
-      gif: CCGIFEncoder,
-      webm: CCWebMEncoder,
-      ffmpegserver: CCFFMpegServerEncoder,
-      'png': CCPNGEncoder,
-      'jpg': CCJPEGEncoder
+		gif: CCGIFEncoder,
+		webm: CCWebMEncoder,
+		ffmpegserver: CCFFMpegServerEncoder,
+		png: CCPNGEncoder,
+		jpg: CCJPEGEncoder
     };
 
     var ctor = _encoders[ _settings.format ];
