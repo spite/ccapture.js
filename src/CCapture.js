@@ -723,6 +723,29 @@ function CCapture( settings ) {
 	
 		if( _capturing ) {
 
+			if( canvas instanceof SVGElement ) {
+				
+				var dPR = window.devicePixelRatio
+				var w = canvas.clientWidth
+				var h = canvas.clientHeight
+				var src = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + h + '" width="' + ( w * dPR ) + '" height="' + ( h * dPR ) + '">' + canvas.innerHTML + '</svg>'
+
+				var image = new Image();
+				image.src = 'data:image/svg+xml,' + escape( src );
+				image.onload = function () {
+				    var canvas = document.createElement('canvas');
+				    canvas.width = image.width;
+				    canvas.height = image.height;
+				    var context = canvas.getContext('2d');
+				    context.fillStyle = '#ffffff'
+				    context.fillRect( 0, 0, canvas.width, canvas.height );
+				    context.drawImage(image, 0, 0);
+				    _capture( canvas );
+				}
+
+				return;
+			}
+
 			if( _settings.motionBlurFrames > 2 ) {
 
 				_checkFrame( canvas );
