@@ -138,6 +138,14 @@ Different browsers have different issues with big files: most break for big Uint
 
 Use a autoSaveTime that give you a file that is small enough to not trip the browser, but large enough to not generate a thousand part files. A value between 10 and 30 seconds for a 4K capture I've found works best: just make sure the file is under 1GB. For most regular, viewport-sized or even Full-HD captures it shouldn't be an issue, but keep in mind this issue.
 
+#### Credits ####
+
+- Slightly modified version of [Whammy.js](https://github.com/antimatter15/whammy) (fixed variable size
+   integer calculations)
+- Slightly modified version of [tar.js](https://github.com/beatgammit/tar-js) (fixed memory allocations for many files)
+- [download.js](http://danml.com/download.html)
+- [Gif.js](https://github.com/jnordberg/gif.js)
+
 #### Contributors ####
 
 Big thanks to [hugohil](https://github.com/hugohil) and [Greggman](https://github.com/greggman)!
