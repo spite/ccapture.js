@@ -1,8 +1,14 @@
 # CCapture.js - A library to capture canvas-based animations
-
 CCapture.js is a library to help capturing animations created with HTML5 `canvas` at a fixed framerate. 
 
-An examples is probably worth a lot of words: [CCapture.js with Game of Life 3D](http://www.clicktorelease.com/code/conway3d_ccapture/).
+- [What is CCapture.js and why would I need it?](#what-is-ccapturejs-and-why-would-i-need-it)
+- [Using the code](#using-the-code)
+- [Limitations](#limitations)
+- [Gallery](#gallery)
+- [Credits](#credits)
+- [License](#license)
+
+An example is probably worth a lot of words: [CCapture.js with Game of Life 3D](http://www.clicktorelease.com/code/conway3d_ccapture/).
 
 ![Sample](https://raw.githubusercontent.com/spite/ccapture.js/master/assets/sample.gif)
 
@@ -122,7 +128,7 @@ capturer.save();
 capturer.save( function( blob ) { /* ... */ } );
 ```
 
-**Note**: you don't need to .stop() in order to .save(). Call capturer.save() anytime you want to get a download up to that moment.
+**Note**: you don't need to `.stop()` in order to `.save()`. Call `capturer.save()` anytime you want to get a download up to that moment.
 
 #### Limitations ####
 
@@ -134,9 +140,19 @@ CCapture.js only works on browsers that have a `canvas implementation.
 
 **The *autoSaveTime* parameter**
 
-Different browsers have different issues with big files: most break for big Uint8Array allocations, or when a file to downloads is larger than 1GB, etc. I haven't been able to find a solid solution for all, so I introduced the *autoSaveTime* parameter, just to prevent loss of large files. If used with a webm/png/jpg capturer, it will automatically compile, download and free the captured frames every *n* seconds specified in the parameter. The downloaded file will have the structure *{name}-part-00000n* and the extension (.webm or .tar). The files inside the TAR file will have the right number of sequence.
+Different browsers have different issues with big files: most break for big `Uint8Array` allocations, or when a file to downloads is larger than 1GB, etc. I haven't been able to find a solid solution for all, so I introduced the `autoSaveTime` parameter, just to prevent loss of large files. If used with a webm/png/jpg capturer, it will automatically compile, download and free the captured frames every *n* seconds specified in the parameter. The downloaded file will have the structure *{name}-part-00000n* and the extension (.webm or .tar). The files inside the TAR file will have the right number of sequence.
 
-Use a autoSaveTime that give you a file that is small enough to not trip the browser, but large enough to not generate a thousand part files. A value between 10 and 30 seconds for a 4K capture I've found works best: just make sure the file is under 1GB. For most regular, viewport-sized or even Full-HD captures it shouldn't be an issue, but keep in mind this issue.
+Use an `autoSaveTime` value that give you a file that is small enough to not trip the browser, but large enough to not generate a thousand part files. A value between 10 and 30 seconds for a 4K capture I've found works best: just make sure the file is under 1GB. For most regular, viewport-sized or even Full-HD captures it shouldn't be an issue, but keep in mind this issue.
+
+**Memory allocation and garbage collection**
+
+There's some issues in which memory -mostly from accumulated frames- will not be freed, depending on the platform and the mood of the browser. If you run into non-sawtooth like memory profiles, and are running chrome, try running it with ```--js-flags="--expose-gc"```. This way CCapture will run ```gc()``` every frame and memory consumption should stay stable.
+
+#### Gallery ####
+
+[![cru·ci·form 4K CCapture](http://img.youtube.com/vi/rly322ijJWA/0.jpg)](https://www.youtube.com/watch?v=rly322ijJWAY "cru·ci·form 4K CCapture")
+[![obsidian by xplsv 4K CCapture](http://img.youtube.com/vi/D0qUgb6AGX8/0.jpg)](https://www.youtube.com/watch?v=D0qUgb6AGX8 "obsidian by xplsv 4K CCapture")
+[![dataworld by xplsv 4K CCapture](http://img.youtube.com/vi/3HQBmurQps8/0.jpg)](https://www.youtube.com/watch?v=3HQBmurQps8 "dataworld by xplsv 4K CCapture")
 
 #### Credits ####
 
@@ -154,4 +170,4 @@ Big thanks to [hugohil](https://github.com/hugohil) and [Greggman](https://githu
 
 MIT licensed
 
-Copyright (C) 2012-2015 Jaume Sanchez Elias, http://www.clicktorelease.com
+Copyright (C) 2012-2016 Jaume Sanchez Elias, http://www.clicktorelease.com
