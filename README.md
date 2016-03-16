@@ -40,6 +40,7 @@ The library supports multiple export formats using modular encoders (`CCFrameEnc
 - `CCPNGEncoder` and `CCJPEGEncoder` export PNG and JPEG files in a TAR file, respectively
 - `CCGIFEncoder` uses [gifjs](http://jnordberg.github.io/gif.js/) to create animated GIFs
 - `CCFFMpegServerEncoder` uses [ffmpegserver.js](https://github.com/greggman/ffmpegserver.js) to generate video on the server 
+
 Forks, pull requests and code critiques are welcome!
 
 #### Using the code ####
