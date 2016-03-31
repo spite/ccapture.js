@@ -332,7 +332,7 @@ function CCStreamEncoder( settings ) {
 
 	this.framerate = this.settings.framerate;
 	this.type = 'video/webm';
-	this.fileExtension = '.webm';
+	this.extension = '.webm';
 	this.stream = null;
 	this.mediaRecorder = null;
 	this.chunks = [];
@@ -555,7 +555,7 @@ function CCapture( settings ) {
 		ffmpegserver: CCFFMpegServerEncoder,
 		png: CCPNGEncoder,
 		jpg: CCJPEGEncoder,
-		stream: CCStreamEncoder
+		'webm-mediarecorder': CCStreamEncoder
     };
 
     var ctor = _encoders[ _settings.format ];
