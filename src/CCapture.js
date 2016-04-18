@@ -540,7 +540,7 @@ function CCapture( settings ) {
 	_timeDisplay.style.padding = '5px'
 	_timeDisplay.style.color = 'red';
 	_timeDisplay.style.zIndex = 100000
-	document.body.appendChild( _timeDisplay );
+	if( _settings.display ) document.body.appendChild( _timeDisplay );
 
 	var canvasMotionBlur = document.createElement( 'canvas' );
 	var ctxMotionBlur = canvasMotionBlur.getContext( '2d' );
