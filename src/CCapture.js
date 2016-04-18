@@ -2,6 +2,10 @@
 
 "use strict";
 
+var root = typeof self == 'object' && self.self === self && self ||
+			typeof global == 'object' && global.global === global && global ||
+			this;
+
 if( !('gc' in window ) ) {
 	window.gc = function(){}
 }
@@ -880,6 +884,19 @@ function CCapture( settings ) {
 	}
 }
 
-window.CCapture = CCapture;
+if (typeof exports != 'undefined' && !exports.nodeType) {
+	if (typeof module != 'undefined' && !module.nodeType && module.exports) {
+		exports = module.exports = CCapture;
+	}
+	exports.CCapture = CCapture;
+} else {
+	root.CCapture = CCapture;
+}
 
-}) ();
+if (typeof define == 'function' && define.amd) {
+	define('CCapture', [], function() {
+		return CCapture;
+	});
+}
+
+}());
