@@ -1,0 +1,359 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>CCapture.js example with Conway's Game of Life in 3D</title>
+		<meta charset="utf-8">	
+		<link rel="stylesheet" href="buttons.css" type="text/css" media="screen" title="no title" charset="utf-8">
+		<style type="text/css">
+		html {
+			height: 100%;
+		}
+		body {
+			margin: 0;
+			padding: 0;
+			background-color: #000;
+			color: #ffffff;
+			font-family: sans-serif;
+			font-size: 13px;
+			line-height: 20px;
+			height: 100%;
+			overflow: hidden
+		}
+		container{ 
+			position: absolute; 
+			left: 0; 
+			top: 0;
+			right: 0;
+			bottom: 0 
+		}
+		a {
+			color: #fff;
+			text-decoration: none;
+			border-bottom: 1px dotted #fff;
+		}
+		a:hover {
+			border-bottom: 1px solid #fff
+		}
+		#title {
+			z-index: 100;
+			position: absolute;
+			top: 20px;
+			width: 300px;
+			left: 20px;
+			background-color: rgba(0,0,0,0.2);
+			border-radius: 3px;
+			padding: 10px;
+			overflow: auto;
+			-webkit-transition: opacity 1s ease-out;
+			-moz-transition: opacity 1s ease-out;
+		}
+		#options{
+			position: absolute;
+			top: 20px;
+			width: 300px;
+			right: 20px;
+			background-color: rgba(0,0,0,0.2);
+			border-radius: 3px;
+			padding: 10px;
+			overflow: hidden;
+		}
+		h1{ 
+			font: 20px Georgia; 
+			margin: 0;
+		}
+		h2{ 
+			font: 16px Georgia; 
+			margin: 0;
+		}
+		#preloader{
+			width: 306px;
+			height: 36px;
+			position: absolute;
+			left: 50%;
+			top: 50%;
+			margin-left: -153px;
+			margin-top: -18px;
+			background-color: rgba(255,255,255,0.8);
+			border-radius: 3px;
+			-webkit-transition: opacity 1s ease-out;
+			-moz-transition: opacity 1s ease-out;
+		}
+		#bar{
+			height: 30px;
+			position: absolute;
+			left: 50%;
+			top: 50%;
+			margin-left: -150px;
+			margin-top: -15px;
+			background-color: rgba(0,0,0,0.8);
+			border-radius: 3px;
+		}
+		#download-video-button{
+			display: none;
+		}
+		#progress{ position: absolute; left: 0; top: 0; z-index: 100; height: 10px; background-color: #b70000;}
+		</style>
+	</head>
+	<body>
+	
+	<div id="title">
+		<h1>CCapture.js example</h1><h2>Game of Life in 3D</h2>
+		<p>Example of <a href="#" >ccapture.js</a> using <a href="http://www.clicktorelease.com/code/conway3d/" >Game of Life in 3D</a>.</p>
+		<p>This is a simple example of how to add a few lines of code to capture video out of a canvas-based animation.</p>
+		<input type="radio" name="encoder" value="webm" checked="checked" >WebM</input>
+		<input type="radio" name="encoder" value="gif" >GIF</input>
+		
+		<a class="button" href="#" id="start-capturing-button" >Start recording</a>
+		<a class="button" href="#" id="download-video-button" >Stop recording and view video</a>
+	</div>
+	
+	<div id="container" ></div>
+	
+	<div id="progress"></div>
+
+	<a href="https://github.com/spite/ccapture.js"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/652c5b9acfaddf3a9c326fa6bde407b87f7be0f4/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6f72616e67655f6666373630302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png"></a>
+
+	<script type="text/javascript" src="js/Three.js"></script>
+	<script type="text/javascript" src="js/Tween.js"></script>
+	<script type="text/javascript" src="js/RequestAnimationFrame.js"></script>
+	<script type="text/javascript" src="js/Detector.js"></script>
+
+	<script type="text/javascript" src="../../build/CCapture.all.min.js"></script>
+	
+	<script type="text/javascript" >
+	
+	var video = document.createElement( 'audio' );
+	video.autoplay = true;
+	video.volume = 0;
+	video.src = 'video.mp4';
+
+	var capturer;
+	var lon = 45, lat = 45, phi = 0, theta = 0;
+	var d = 140;
+	
+	var container;
+	var camera, scene, renderer,
+	geometry, material, mesh, cubes = [];
+	var light, light2;
+	
+	if(!Detector.webgl){
+		Detector.addGetWebGLMessage();
+	} else {	
+		window.addEventListener( 'load', init, false );
+	}
+	
+	TWEEN.start();
+	
+	var fov = 75;
+	var side = 10;
+	var size = 10;
+	var cells = [];
+	var tweens = [];
+	var timeout;
+	var lastTime = null;
+	var ellapsedTime = 0;
+	
+	var title = document.getElementById( 'title' );
+			
+	function init() {
+	
+		container = document.getElementById( 'container' );
+		
+		camera = new THREE.Camera( fov, window.innerWidth / window.innerHeight, 1, 1000 );
+		camera.position.z = 1000;
+
+		scene = new THREE.Scene();
+
+		geometry = new THREE.CubeGeometry( size, size, size );
+
+		for( var z = 0; z < side; z++ ) {
+			for( var y = 0; y < side; y++ ) {
+				for( var x = 0; x < side; x++ ) {
+					var mesh = new THREE.Mesh( 
+						geometry, [ 
+						new THREE.MeshLambertMaterial( { 
+							color: ( z * 255 / side ) * 256 * 256 + ( y * 255 / side ) * 256 + ( x * 255 / side ), 
+							transparent: true 
+						} )
+					] );
+					scene.addObject( mesh );
+					mesh.castShadow = true;
+					mesh.receiveShadow = true;
+					mesh.position.x = ( x - .5 * side ) * size;
+					mesh.position.y = ( y - .5 * side ) * size;
+					mesh.position.z = ( z - .5 * side ) * size;
+					var conwayStatus = ( Math.random() < .1 );
+					mesh.conway = conwayStatus?1:0;
+					cubes.push( mesh );
+					cells.push( { status: conwayStatus } );
+					tweens.push( new TWEEN.Tween( mesh ).easing( TWEEN.Easing.Quadratic.EaseOut ) );
+				}
+			}
+		}
+		
+		var mesh = new THREE.Mesh( new THREE.SphereGeometry( 1000, 40, 40 ), new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
+		mesh.flipSided = true;
+		scene.addObject( mesh );
+		
+		light = new THREE.SpotLight( 0xff170f, 1 );
+		light.position.set( 0, 500, 2000 );
+		light.castShadow = true;
+		scene.addLight( light );
+		
+		light2 = new THREE.SpotLight( 0xffcf0f, 1 );
+		light2.position.set( 0, -400, -1800 );
+		light2.castShadow = true;
+		scene.addLight( light2 );
+		
+		renderer = new THREE.WebGLRenderer( {antialias: true });
+		renderer.sortObjects = false;
+		renderer.setSize( window.innerWidth, window.innerHeight );
+		
+		renderer.shadowCameraNear = camera.near;
+		renderer.shadowCameraFar = camera.far;
+		renderer.shadowCameraFov = camera.fov;
+
+		renderer.shadowMapBias = 0.0039;
+		renderer.shadowMapDarkness = 0.5;
+		renderer.shadowMapWidth = 1024;
+		renderer.shadowMapHeight = 1024;
+
+		renderer.shadowMapEnabled = true;
+		renderer.shadowMapSoft = true;
+			
+		container.appendChild( renderer.domElement );
+		
+		window.addEventListener( 'resize', onWindowResize, false );
+		
+		onWindowResize();
+		
+		lastTime = performance.now();//Date.now();
+	
+		capturer = null;
+		
+		var sCB = document.getElementById( 'start-capturing-button' ),
+			dVB = document.getElementById( 'download-video-button' ),
+			progress = document.getElementById( 'progress' );
+		
+		sCB.addEventListener( 'click', function( e ) {
+
+			capturer = new CCapture( { 
+				verbose: true, 
+				framerate: 60,
+				motionBlurFrames: 16,
+				quality: 90,
+				format: document.querySelector('input[name="encoder"]:checked').value,
+				workersPath: 'js/',
+				onProgress: function( p ) { progress.style.width = ( p * 100 ) + '%' }
+			} );
+
+			capturer.start();
+			this.style.display = 'none';
+			dVB.style.display = 'block';
+
+			start();
+
+			e.preventDefault();
+		}, false );
+		
+		dVB.addEventListener( 'click', function( e ) {
+			capturer.stop();
+			this.style.display = 'none';
+			//this.setAttribute( 'href',  );
+			capturer.save();
+		}, false );
+
+	}
+
+	function start() {
+
+		setInterval( function() {
+
+			lat = ( .5 - Math.random() ) * 2 * 85;
+			lon = Math.random() * 360;
+			
+		}, 1000 );
+		
+		animate();
+
+	}
+	
+	function onWindowResize( event ) {
+		if( renderer ) {
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			camera.projectionMatrix = THREE.Matrix4.makePerspective( fov, window.innerWidth / window.innerHeight, 1, 3000 );
+		}
+	}
+	
+	function animate() {
+
+		requestAnimationFrame( animate );
+		render();
+		
+	}
+	
+	function evaluateCell( current ) {
+	
+		var status = cells[ current ].status;
+		var count = 0;
+		for( var z = -1; z <=1; z++ ) {
+			for( var y = -1; y <=1; y++ ) {
+				for( var x = -1; x <=1; x++ ) {
+					var p = current + z * side * side + y * side + x;
+					if( cells[ p ] && cells[ p ].status ) {
+						count++;
+					}
+					
+				}
+			}
+		}
+		
+		if( count > 4 ) return false; 
+		if( count < 3 ) return false;
+		if( count == 4 ) return true;
+		return status;
+	}
+
+	function render() {
+
+		var currentTime = video.currentTime * 1000;//performance.now();//Date.now();
+		currentTime = performance.now();;
+		ellapsedTime = currentTime - lastTime;
+
+		for( var p = 0, m = cells.length; p < m; p++ ) {
+			cubes[ p ].materials[ 0 ].opacity = cubes[ p ].conway;
+			cubes[ p ].rotation.y = Math.PI * cubes[ p ].conway;
+			var s = cubes[ p ].conway;
+			if( s < .001 ) s = .001;
+			cubes[ p ].scale.set( s, s, s );
+		}
+
+		lon += .25 * ellapsedTime;
+		
+		lat = Math.max( - 85, Math.min( 85, lat ) );
+		phi = ( 90 - lat ) * Math.PI / 180;
+		theta = lon * Math.PI / 180;
+
+		d = 100 + 40 * Math.sin( .01 * currentTime );
+
+		camera.position.x = d * Math.sin( phi ) * Math.cos( theta );
+		camera.position.y = d * Math.cos( phi );
+		camera.position.z = d * Math.sin( phi ) * Math.sin( theta );
+		
+		var dl = 400;
+		var t = .0003 * currentTime;
+		light.position.set( camera.position.x, camera.position.y + 50, camera.position.z );//dl * Math.sin( t ), dl * Math.cos( t ), dl * Math.cos( t ) * Math.sin( t ) ); 
+		var t = .00025 * currentTime;
+		light2.position.set( dl * Math.sin( t ) * Math.cos( t ), dl * Math.sin( t ), dl * Math.cos( t ) ); 
+
+		renderer.render( scene, camera );
+		if( capturer ) capturer.capture( renderer.domElement );
+		
+		lastTime = currentTime;
+	}
+	
+	</script>
+	
+</body>
+	
+</html>

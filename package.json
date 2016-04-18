@@ -1,20 +1,22 @@
 {
   "name": "ccapture.js",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "A library to capture canvas-based animations at a fixed framerate",
+  "main": "build/CCapture.all.min.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/spite/ccapture.js.git"
   },
   "keywords": [
-    "canvas",
-    "record",
     "capture",
-    "video",
-    "gif",
-    "webm"
+    "canvas",
+    "webgl",
+    "animation"
   ],
-  "author": "Jaume Sanchez <the.spite@gmail.com>",
+  "author": "Jaume Sanchez <the.spite@gmail.com> (https://www.clicktorelease.com)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/spite/ccapture.js/issues"
