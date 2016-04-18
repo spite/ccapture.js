@@ -1,10 +1,56 @@
-( function() { 
+;(function() { 
 
 "use strict";
 
-var root = typeof self == 'object' && self.self === self && self ||
-			typeof global == 'object' && global.global === global && global ||
-			this;
+var objectTypes = {
+'function': true,
+'object': true
+};
+
+function checkGlobal(value) {
+    return (value && value.Object === Object) ? value : null;
+  }
+
+/** Built-in method references without a dependency on `root`. */
+var freeParseFloat = parseFloat,
+  freeParseInt = parseInt;
+
+/** Detect free variable `exports`. */
+var freeExports = (objectTypes[typeof exports] && exports && !exports.nodeType)
+? exports
+: undefined;
+
+/** Detect free variable `module`. */
+var freeModule = (objectTypes[typeof module] && module && !module.nodeType)
+? module
+: undefined;
+
+/** Detect the popular CommonJS extension `module.exports`. */
+var moduleExports = (freeModule && freeModule.exports === freeExports)
+? freeExports
+: undefined;
+
+/** Detect free variable `global` from Node.js. */
+var freeGlobal = checkGlobal(freeExports && freeModule && typeof global == 'object' && global);
+
+/** Detect free variable `self`. */
+var freeSelf = checkGlobal(objectTypes[typeof self] && self);
+
+/** Detect free variable `window`. */
+var freeWindow = checkGlobal(objectTypes[typeof window] && window);
+
+/** Detect `this` as the global object. */
+var thisGlobal = checkGlobal(objectTypes[typeof this] && this);
+
+/**
+* Used as a reference to the global object.
+*
+* The `this` value is used if it's the global object to avoid Greasemonkey's
+* restricted `window` object, otherwise the `window` object is used.
+*/
+var root = freeGlobal ||
+((freeWindow !== (thisGlobal && thisGlobal.window)) && freeWindow) ||
+  freeSelf || thisGlobal || Function('return this')();
 
 if( !('gc' in window ) ) {
 	window.gc = function(){}
@@ -884,19 +930,28 @@ function CCapture( settings ) {
 	}
 }
 
-if (typeof exports != 'undefined' && !exports.nodeType) {
-	if (typeof module != 'undefined' && !module.nodeType && module.exports) {
-		exports = module.exports = CCapture;
-	}
-	exports.CCapture = CCapture;
-} else {
-	root.CCapture = CCapture;
-}
+(freeWindow || freeSelf || {}).CCapture = CCapture;
 
-if (typeof define == 'function' && define.amd) {
-	define('CCapture', [], function() {
-		return CCapture;
-	});
+  // Some AMD build optimizers like r.js check for condition patterns like the following:
+  if (typeof define == 'function' && typeof define.amd == 'object' && define.amd) {
+    // Define as an anonymous module so, through path mapping, it can be
+    // referenced as the "underscore" module.
+    define(function() {
+    	return CCapture;
+    });
+}
+  // Check for `exports` after `define` in case a build optimizer adds an `exports` object.
+  else if (freeExports && freeModule) {
+    // Export for Node.js.
+    if (moduleExports) {
+    	(freeModule.exports = CCapture).CCapture = CCapture;
+    }
+    // Export for CommonJS support.
+    freeExports.CCapture = CCapture;
+}
+else {
+    // Export to the global object.
+    root.CCapture = CCapture;
 }
 
 }());
