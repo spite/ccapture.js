@@ -1,8 +1,8 @@
 {
   "name": "ccapture.js",
-  "homepage": "https://github.com/spite/ccapture.js",
+  "homepage": "https://github.com/spite/ccapture.js#readme",
   "authors": [
-    "Jaume Sanchez <the.spite@gmail.com>"
+    "Jaume Sanchez <the.spite@gmail.com> (https://www.clicktorelease.com)",
   ],
   "description": "A library to capture canvas-based animations at a fixed framerate",
   "moduleType": [
