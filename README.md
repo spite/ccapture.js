@@ -60,9 +60,13 @@ Or include the whole pack
 ```html
 <script src="CCapture.all.min.js"></script>
 ```
-Or use npm to install the [package](https://www.npmjs.com/package/ccapture.js):
+Or use npm or bower to install the [package](https://www.npmjs.com/package/ccapture.js):
 ```bash
 npm install ccapture.js
+```
+Or use bower to install the [package](https://www.npmjs.com/package/ccapture.js):
+```bash
+bower install ccapture.js
 ```
 
 To create a CCapture object, write:
