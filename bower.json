@@ -1,0 +1,24 @@
+{
+  "name": "ccapture.js",
+  "homepage": "https://github.com/spite/ccapture.js#readme",
+  "authors": [
+    "Jaume Sanchez <the.spite@gmail.com> (https://www.clicktorelease.com)",
+  ],
+  "description": "A library to capture canvas-based animations at a fixed framerate",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "canvas",
+    "record",
+    "capture",
+    "video",
+    "gif",
+    "webm"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "gif.js": "^0.1.6",
+    "whammy": "*"
+  }
+}
