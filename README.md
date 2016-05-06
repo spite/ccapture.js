@@ -22,7 +22,7 @@ What if, indeed. What would happen is that you'd get a choppy video at best. At 
 
 With CCapture.js you can record smooth videos at a fixed framerate for all these situations, because it doesn't run in realtime: it makes the animations run at a given, fixed framerate which can be specified. You can record animations at smooth and consistent 30 or 60fps even if each frame takes seconds to render. You can even take a 240fps capture and create motion blur with post-production software.
 
-The only requirement is that you step your values per frame according to ellapsed time. In other words, don't increment your variables with a fixed value each frame, but use an ellapsed time delta to adjust those incrementts. CCapture.js works by hooking the common methods for obtaining that ellapsed time: `Date.now()`, `setTimeout`, `requestAnimationFrame`, etc. and making them behave like a constant time step is happening, fixed by the specified framerate.
+The only requirement is that you step your values per frame according to ellapsed time. In other words, don't increment your variables with a fixed value each frame, but use an ellapsed time delta to adjust those increments. CCapture.js works by hooking the common methods for obtaining that ellapsed time: `Date.now()`, `setTimeout`, `requestAnimationFrame`, etc. and making them behave like a constant time step is happening, fixed by the specified framerate.
 
 Methods supported so far:
 
