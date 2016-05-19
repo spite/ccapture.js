@@ -716,8 +716,8 @@ function CCapture( settings ) {
 			return this._hookedTime + _settings.startTime;
 		};
 
-		Object.defineProperty( HTMLVideoElement.prototype, 'currentTime', { get: hookCurrentTime } )
-		Object.defineProperty( HTMLAudioElement.prototype, 'currentTime', { get: hookCurrentTime } )
+		Object.defineProperty( HTMLVideoElement.prototype, 'currentTime', { get: hookCurrentTime } )
+		Object.defineProperty( HTMLAudioElement.prototype, 'currentTime', { get: hookCurrentTime } )
 
 	}
 	
