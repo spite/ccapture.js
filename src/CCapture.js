@@ -372,6 +372,56 @@ CCFFMpegServerEncoder.prototype.safeToProceed = function() {
     return this.encoder.safeToProceed();
 };
 
+
+// http://www.smartjava.org/content/capture-canvas-and-webgl-output-video-using-websockets
+// http://fhtr.blogspot.com.au/2014/02/saving-out-video-frames-from-webgl-app.html
+function CCWebsocketServerEncoder( settings ) {
+
+  CCFrameEncoder.call( this, settings );
+
+  this.framerate = this.settings.framerate;
+  this.type = 'image/png';
+  this.extension = '.png';
+  this.stream = null;
+  this.mediaRecorder = null;
+  this.chunks = [];
+  this.counter = 0;
+
+  settings.quality = ( settings.quality / 100 ) || .8;
+
+  this.encoder = new WebSocket("ws://localhost:8889/");
+
+}
+
+CCWebsocketServerEncoder.prototype = Object.create( CCFrameEncoder.prototype );
+
+CCWebsocketServerEncoder.prototype.add = function( canvas ) {
+
+  if( !this.stream ) {
+    this.stream = canvas.captureStream( this.framerate );
+    this.mediaRecorder = new MediaRecorder( this.stream );
+    this.mediaRecorder.start();
+    this.mediaRecorder.ondataavailable = function(e) {
+      this.counter++
+      var data = canvas.toDataURL('image/png', this.quality);
+      this.encoder.send(data);
+    }.bind( this );
+  }
+
+  this.step();
+
+}
+
+CCWebsocketServerEncoder.prototype.save = function( callback ) {
+  // End the stream
+  this.mediaRecorder.stop();
+  // Close the socket
+  this.encoder.close()
+
+  this.stop();
+}
+
+
 /*
 	HTMLCanvasElement.captureStream()
 */
@@ -603,6 +653,7 @@ function CCapture( settings ) {
 		gif: CCGIFEncoder,
 		webm: CCWebMEncoder,
 		ffmpegserver: CCFFMpegServerEncoder,
+		websocketserver: CCWebsocketServerEncoder,
 		png: CCPNGEncoder,
 		jpg: CCJPEGEncoder,
 		'webm-mediarecorder': CCStreamEncoder
