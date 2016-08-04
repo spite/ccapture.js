@@ -13,13 +13,18 @@ wss.on('connection', function connection(ws) {
 
   var d = new Date();
   var directory = path + "/" + d.toISOString();
+
   fs.mkdir(path, '755', function() {});
   fs.mkdir(directory, '755', function() {});
 
-  ws.on('message', function incoming(data) {
+  ws.on('message', function incoming(data, filename, x) {
+    console.log("filename")
+    console.log(filename)
+
+    base64Data = data.toString('base64');
+
     // Allows for up to 1 hour of encoded data at 25fps.
     var filename = ("00000" + frame).slice(-5)+".png";
-    var base64Data = data.replace(/^data:image\/png;base64,/, "");
 
     fs.writeFile(directory + "/" + filename, base64Data, 'base64', function(err) {
         if ( err ) console.log(err);

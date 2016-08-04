@@ -382,10 +382,11 @@ function CCWebsocketServerEncoder( settings ) {
   this.framerate = this.settings.framerate;
   this.type = 'image/png';
   this.extension = '.png';
+  this.fileExtension = this.extension;
   this.stream = null;
   this.mediaRecorder = null;
   this.chunks = [];
-  this.counter = 0;
+  this.count = 0;
 
   settings.quality = ( settings.quality / 100 ) || .8;
 
@@ -397,18 +398,18 @@ CCWebsocketServerEncoder.prototype = Object.create( CCFrameEncoder.prototype );
 
 CCWebsocketServerEncoder.prototype.add = function( canvas ) {
 
-  if( !this.stream ) {
-    this.stream = canvas.captureStream( this.framerate );
-    this.mediaRecorder = new MediaRecorder( this.stream );
-    this.mediaRecorder.start();
-    this.mediaRecorder.ondataavailable = function(e) {
-      this.counter++
-      var data = canvas.toDataURL('image/png', this.quality);
-      this.encoder.send(data);
+  canvas.toBlob( function( blob ) {
+    var fileReader = new FileReader();
+    fileReader.onload = function() {
+      frame = new Uint8Array( fileReader.result );
+      filename = pad( this.count ) + this.fileExtension;
+      this.encoder.send(frame);
+      this.count++;
+      this.step();
     }.bind( this );
-  }
+    fileReader.readAsArrayBuffer(blob);
 
-  this.step();
+  }.bind( this ), this.type )
 
 }
 
