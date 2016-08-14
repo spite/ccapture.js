@@ -921,12 +921,24 @@ function CCapture( settings ) {
 
     }
 
+	function _getTiming() {
+
+		return {
+			framecount: _frameCount,
+			intermediateframecount: _intermediateFrameCount,
+			time: _time,
+			performancetime: _performanceTime
+		};
+
+	}
+
 	return {
 		start: _start,
 		capture: _capture,
 		stop: _stop,
 		save: _save,
-        on: _on
+		on: _on,
+		getTiming: _getTiming
 	}
 }
 
