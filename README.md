@@ -55,6 +55,8 @@ Include CCapture[.min].js and [Whammy.js](http://antimatter15.com/wp/2012/08/wha
 <script src="gif.js"></script>
 <!-- Include tar.js if you want to export PNG or JPEG -->
 <script src="tar.js"></script>
+<!-- Include download.js for easier file download -->
+<script src="download.js"></script>
 ```
 Or include the whole pack
 ```html
