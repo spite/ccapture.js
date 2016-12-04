@@ -1,4 +1,5 @@
 #!/bin/bash
 
-java -jar compiler.jar --js=../src/CCapture.js --js_output_file=../build/CCapture.min.js
-java -jar compiler.jar --js=../src/download.js --js=../src/Whammy.js --js=../src/tar.js --js=../src/gif.js --js=../src/CCapture.js --js_output_file=../build/CCapture.all.min.js
+uglifyjs ../src/CCapture.js --compress --mangle -o ../build/CCapture.min.js
+uglifyjs ../src/download.js ../src/Whammy.js ../src/tar.js ../src/gif.js ../src/CCapture.js --compress --mangle -o ../build/CCapture.all.min.js
+
