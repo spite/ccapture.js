@@ -8,6 +8,11 @@
   "moduleType": [
     "globals"
   ],
+  "ignore": [
+  	"assets",
+  	"examples",
+  	"utils"
+  ],
   "keywords": [
     "canvas",
     "record",
