@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<title>CCapture.js example with Conway's Game of Life in 3D</title>
-		<meta charset="utf-8">	
+		<meta charset="utf-8">
 		<link rel="stylesheet" href="buttons.css" type="text/css" media="screen" title="no title" charset="utf-8">
 		<link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,700' rel='stylesheet' type='text/css'>
 		<style type="text/css">
@@ -21,19 +21,19 @@
 			overflow: hidden
 		}
 		#scroller{
-			position: absolute; 
-			left: 0; 
+			position: absolute;
+			left: 0;
 			top: 0;
 			right: 0;
 			bottom: 0;
 			overflow: scroll;
 		}
-		#container{ 
-			position: absolute; 
-			left: 0; 
+		#container{
+			position: absolute;
+			left: 0;
 			top: 0;
 			right: 0;
-			bottom: 0 
+			bottom: 0
 		}
 		a {
 			color: #fff;
@@ -66,12 +66,12 @@
 			padding: 10px;
 			overflow: hidden;
 		}
-		h1{ 
-			font-size: 20px; 
+		h1{
+			font-size: 20px;
 			margin: 0;
 		}
-		h2{ 
-			font-size: 16px; 
+		h2{
+			font-size: 16px;
 			margin: 0;
 		}
 		#preloader{
@@ -104,7 +104,7 @@
 		</style>
 	</head>
 	<body>
-	
+
 	<div id="scroller" >
 		<div id="title">
 			<h1>CCapture.js example</h1><h2>Game of Life in 3D</h2>
@@ -128,39 +128,41 @@
 			<a class="button" href="#" id="download-video-button" >Stop recording and view capture</a>
 		</div>
 	</div>
-	
+
 	<div id="container" ></div>
-	
+
 	<div id="progress"></div>
 
 	<a href="https://github.com/spite/ccapture.js"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/652c5b9acfaddf3a9c326fa6bde407b87f7be0f4/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6f72616e67655f6666373630302e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png"></a>
 
-	<script type="text/javascript" src="./js/Three.js"></script>
+	<script type="text/javascript" src="./js/three.min.js"></script>
 	<script type="text/javascript" src="./js/Tween.js"></script>
 	<script type="text/javascript" src="./js/RequestAnimationFrame.js"></script>
 	<script type="text/javascript" src="./js/Detector.js"></script>
+	<script type="text/javascript" src="./js/OrbitControls.js"></script>
 
 	<script type="text/javascript" src="../../build/CCapture.all.min.js"></script>
-	
+
 	<script type="text/javascript" >
 
 	var capturer;
 	var lon = 45, lat = 45, phi = 0, theta = 0;
 	var d = 40;
-	
+
 	var container;
 	var camera, scene, renderer,
 	geometry, material, mesh, cubes = [];
-	var light, light2;
-	
+	var spotLight, spotLight2;
+	var controls;
+
 	if(!Detector.webgl){
 		Detector.addGetWebGLMessage();
-	} else {	
+	} else {
 		window.addEventListener( 'load', init, false );
 	}
-	
+
 	TWEEN.start();
-	
+
 	var fov = 75;
 	var side = 10;
 	var size = 10;
@@ -169,31 +171,33 @@
 	var timeout;
 	var lastTime = null;
 	var ellapsedTime = 0;
-	
+
 	var title = document.getElementById( 'title' );
-			
+
 	function init() {
-	
+
 		container = document.getElementById( 'container' );
-		
-		camera = new THREE.Camera( fov, window.innerWidth / window.innerHeight, 1, 1000 );
+
+		camera = new THREE.PerspectiveCamera( fov, window.innerWidth / window.innerHeight, 1, 2000 );
 		camera.position.z = 1000;
 
 		scene = new THREE.Scene();
 
-		geometry = new THREE.CubeGeometry( size, size, size );
+		geometry = new THREE.BoxBufferGeometry( size, size, size );
 
 		for( var z = 0; z < side; z++ ) {
 			for( var y = 0; y < side; y++ ) {
 				for( var x = 0; x < side; x++ ) {
-					var mesh = new THREE.Mesh( 
-						geometry, [ 
-						new THREE.MeshLambertMaterial( { 
-							color: ( z * 255 / side ) * 256 * 256 + ( y * 255 / side ) * 256 + ( x * 255 / side ), 
-							transparent: true 
+					var mesh = new THREE.Mesh(
+						geometry,
+						new THREE.MeshStandardMaterial( {
+							roughness: .5,
+							metalness: 0,
+							color: ( z * 255 / side ) * 256 * 256 + ( y * 255 / side ) * 256 + ( x * 255 / side ),
+							transparent: true
 						} )
-					] );
-					scene.addObject( mesh );
+					);
+					scene.add( mesh );
 					mesh.castShadow = true;
 					mesh.receiveShadow = true;
 					mesh.position.x = ( x - .5 * side ) * size;
@@ -207,57 +211,70 @@
 				}
 			}
 		}
-		
-		var mesh = new THREE.Mesh( new THREE.SphereGeometry( 1000, 40, 40 ), new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
-		mesh.flipSided = true;
-		scene.addObject( mesh );
-		
-		light = new THREE.SpotLight( 0xff170f, 1 );
-		light.position.set( 0, 500, 2000 );
-		light.castShadow = true;
-		scene.addLight( light );
-		
-		light2 = new THREE.SpotLight( 0xffcf0f, 1 );
-		light2.position.set( 0, -400, -1800 );
-		light2.castShadow = true;
-		scene.addLight( light2 );
-		
-		renderer = new THREE.WebGLRenderer( {antialias: true });
+
+		var mesh = new THREE.Mesh(
+			new THREE.IcosahedronGeometry( 1000, 3 ),
+			new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff, side: THREE.BackSide } )
+		);
+		scene.add( mesh );
+
+		spotLight = new THREE.SpotLight( 0xff170f, 1, 3000, 2, .5 );
+		spotLight.position.set( 150, 400, 350 );
+		spotLight.castShadow = true;
+		spotLight.angle = Math.PI / 4;
+		spotLight.penumbra = 0.5;
+		spotLight.decay = .5;
+		spotLight.distance = 2000;
+		spotLight.shadow.mapSize.width = 1024;
+		spotLight.shadow.mapSize.height = 1024;
+		spotLight.shadow.camera.near = 1;
+		spotLight.shadow.camera.far = 1000;
+
+		scene.add( spotLight );
+
+		spotLight2 = new THREE.SpotLight( 0xffcf0f, 1, 3000, 2, .5 );
+		spotLight2.position.set( 0, -400, -1800 );
+		spotLight2.castShadow = true;
+		spotLight2.angle = Math.PI / 4;
+		spotLight2.penumbra = 0.5;
+		spotLight2.decay = .5;
+		spotLight2.distance = 2000;
+		spotLight2.shadow.mapSize.width = 1024;
+		spotLight2.shadow.mapSize.height = 1024;
+		spotLight2.shadow.camera.near = 1;
+		spotLight2.shadow.camera.far = 200;
+
+		scene.add( spotLight2 );
+
+		renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true });
 		renderer.sortObjects = false;
 		renderer.setSize( window.innerWidth, window.innerHeight );
-		
-		renderer.shadowCameraNear = camera.near;
-		renderer.shadowCameraFar = camera.far;
-		renderer.shadowCameraFov = camera.fov;
 
-		renderer.shadowMapBias = 0.0039;
-		renderer.shadowMapDarkness = 0.5;
-		renderer.shadowMapWidth = 1024;
-		renderer.shadowMapHeight = 1024;
+		renderer.shadowMap.enabled = true;
+		renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
-		renderer.shadowMapEnabled = true;
-		renderer.shadowMapSoft = true;
-			
 		container.appendChild( renderer.domElement );
-		
+
+		controls = new THREE.OrbitControls( camera, renderer.domElement );
+
 		window.addEventListener( 'resize', onWindowResize, false );
-		
+
 		onWindowResize();
-		
+
 		lastTime = Date.now();
-	
+
 		capturer = null;
-		
+
 		var sCB = document.getElementById( 'start-capturing-button' ),
 			dVB = document.getElementById( 'download-video-button' ),
 			progress = document.getElementById( 'progress' );
-		
+
 		sCB.addEventListener( 'click', function( e ) {
 
 			var framerate = document.querySelector('input[name="framerate"]:checked').value;
 
-			capturer = new CCapture( { 
-				verbose: false, 
+			capturer = new CCapture( {
+				verbose: false,
 				display: true,
 				framerate: framerate,
 				motionBlurFrames: ( 960 / framerate ) * ( document.querySelector('input[name="motion-blur"]').checked ? 1 : 0 ),
@@ -275,35 +292,36 @@
 			dVB.style.display = 'block';
 			e.preventDefault();
 		}, false );
-		
+
 		dVB.addEventListener( 'click', function( e ) {
 			capturer.stop();
 			this.style.display = 'none';
 			//this.setAttribute( 'href',  );
 			capturer.save();
 		}, false );
-		
+
 		animate();
 		next();
-		
+
 	}
-	
+
 	function onWindowResize( event ) {
 		if( renderer ) {
 			renderer.setSize( window.innerWidth, window.innerHeight );
-			camera.projectionMatrix = THREE.Matrix4.makePerspective( fov, window.innerWidth / window.innerHeight, 1, 3000 );
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
 		}
 	}
-	
+
 	function animate() {
 
 		requestAnimationFrame( animate );
 		render();
-		
+
 	}
-	
+
 	function evaluateCell( current ) {
-	
+
 		var status = cells[ current ].status;
 		var count = 0;
 		for( var z = -1; z <=1; z++ ) {
@@ -313,21 +331,21 @@
 					if( cells[ p ] && cells[ p ].status ) {
 						count++;
 					}
-					
+
 				}
 			}
 		}
-		
-		if( count > 4 ) return false; 
+
+		if( count > 4 ) return false;
 		if( count < 3 ) return false;
 		if( count == 4 ) return true;
 		return status;
 	}
-	
+
 	function next() {
-	
+
 		var nextGen = [];
-		
+
 		var p = 0;
 		for( var z = 0; z < side; z++ ) {
 			for( var y = 0; y < side; y++ ) {
@@ -337,26 +355,28 @@
 				}
 			}
 		}
-		
+
 		cells = nextGen;
-		
+
 		for( var p = 0, m = cells.length; p < m; p++ ) {
 			tweens[ p ].to( { conway: cells[ p ].status?1:0 }, 1000 ).start();
 		}
-		
+
 		timeout = setTimeout( next, 2000 );
-		
+
 	}
-	
-	
+
+
 	function render() {
-		
+
+		controls.update();
+
 		var currentTime = Date.now();
 		currentTime = performance.now();;
 		ellapsedTime = currentTime - lastTime;
 
 		for( var p = 0, m = cells.length; p < m; p++ ) {
-			cubes[ p ].materials[ 0 ].opacity = cubes[ p ].conway;
+			cubes[ p ].material.opacity = cubes[ p ].conway;
 			cubes[ p ].rotation.y = Math.PI * cubes[ p ].conway;
 			var s = cubes[ p ].conway;
 			if( s < .001 ) s = .001;
@@ -364,7 +384,7 @@
 		}
 
 		lon += 1.5 * ellapsedTime / ( 1000.0 / 60.0 );
-		
+
 		lat = Math.max( - 85, Math.min( 85, lat ) );
 		phi = ( 90 - lat ) * Math.PI / 180;
 		theta = lon * Math.PI / 180;
@@ -373,21 +393,23 @@
 		camera.position.x = d * Math.sin( phi ) * Math.cos( theta );
 		camera.position.y = d * Math.cos( phi );
 		camera.position.z = d * Math.sin( phi ) * Math.sin( theta );
-		
+		camera.lookAt( scene.position );
+		camera.rotation.z = .001 * currentTime;
+
 		var dl = 400;
-		var t = .0003 * currentTime;
-		light.position.set( camera.position.x, camera.position.y + 50, camera.position.z );//dl * Math.sin( t ), dl * Math.cos( t ), dl * Math.cos( t ) * Math.sin( t ) ); 
+		var t = 0.0003 * currentTime;
+		spotLight.position.set( camera.position.x, camera.position.y + 50, camera.position.z );//dl * Math.sin( t ), dl * Math.cos( t ), dl * Math.cos( t ) * Math.sin( t ) );
 		var t = .00025 * currentTime;
-		light2.position.set( dl * Math.sin( t ) * Math.cos( t ), dl * Math.sin( t ), dl * Math.cos( t ) ); 
+		spotLight2.position.set( dl * Math.sin( t ) * Math.cos( t ), dl * Math.sin( t ), dl * Math.cos( t ) );
 
 		renderer.render( scene, camera );
 		if( capturer ) capturer.capture( renderer.domElement );
-		
+
 		lastTime = currentTime;
 	}
-	
+
 	</script>
-	
+
 </body>
-	
+
 </html>
