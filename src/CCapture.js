@@ -641,6 +641,7 @@ function CCapture( settings ) {
 
 	var _oldSetTimeout = window.setTimeout,
 		_oldSetInterval = window.setInterval,
+	    	_oldClearInterval = window.clearInterval,
 		_oldClearTimeout = window.clearTimeout,
 		_oldRequestAnimationFrame = window.requestAnimationFrame,
 		_oldNow = window.Date.now,
@@ -750,6 +751,7 @@ function CCapture( settings ) {
 		_log( 'Capturer stop' );
 		window.setTimeout = _oldSetTimeout;
 		window.setInterval = _oldSetInterval;
+		window.clearInterval = _oldClearInterval;
 		window.clearTimeout = _oldClearTimeout;
 		window.requestAnimationFrame = _oldRequestAnimationFrame;
 		window.Date.prototype.getTime = _oldGetTime;
