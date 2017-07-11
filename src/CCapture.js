@@ -250,6 +250,46 @@ CCJPEGEncoder.prototype.add = function( canvas ) {
 
 }
 
+/**
+ * Custom Encoder to capture an array of JPEG image blobs
+ *
+ * @param settings
+ * @constructor
+ */
+function CCJPEGBlobEncoder( settings ) {
+  CCFrameEncoder.call( this, settings );
+
+	this.type = 'image/jpeg';
+	this.fileExtension = '.jpg';
+	this.quality = ( settings.quality / 100 ) || .8;
+	this.frames = [];
+	this.callback = settings.callback || function(){};
+}
+
+CCJPEGBlobEncoder.prototype = Object.create( CCFrameEncoder.prototype );
+
+CCJPEGBlobEncoder.prototype.start = function (){
+  this.frames = [];
+};
+
+/*CCJPEGBlobEncoder.prototype.stop = function (){
+  //this.frames = [];
+};*/
+
+CCJPEGBlobEncoder.prototype.add = function ( canvas ) {
+	canvas.toBlob( function( blob ) {
+    this.callback(blob);
+    this.frames.push(blob);
+    this.step();
+	}.bind(this), this.type, this.quality);
+}
+
+CCJPEGBlobEncoder.prototype.save = function( callback ) {
+  if( !this.frames.length ) return;
+
+  callback( this.frames );
+}
+
 /*
 
 	WebM Encoder
@@ -605,6 +645,7 @@ function CCapture( settings ) {
 		ffmpegserver: CCFFMpegServerEncoder,
 		png: CCPNGEncoder,
 		jpg: CCJPEGEncoder,
+		'jpg-blob': CCJPEGBlobEncoder,
 		'webm-mediarecorder': CCStreamEncoder
     };
 
