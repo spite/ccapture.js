@@ -265,8 +265,8 @@ function CCWebMEncoder( settings ) {
 
 	CCFrameEncoder.call( this, settings );
 
-	settings.quality = ( settings.quality / 100 ) || .8;
-	
+	this.quality = ( settings.quality / 100 ) || .8;
+
 	this.extension = '.webm'
 	this.mimeType = 'video/webm'
 	this.baseFilename = this.filename;
