@@ -278,7 +278,7 @@
 				display: true,
 				framerate: framerate,
 				motionBlurFrames: ( 960 / framerate ) * ( document.querySelector('input[name="motion-blur"]').checked ? 1 : 0 ),
-				quality: 100,
+				quality: 99,
 				format: document.querySelector('input[name="encoder"]:checked').value,
 				workersPath: '../../src/',
 				timeLimit: 4,
@@ -389,7 +389,7 @@
 		phi = ( 90 - lat ) * Math.PI / 180;
 		theta = lon * Math.PI / 180;
 
-		d = 140 + 100 * Math.sin( .01 * currentTime );
+		//d = 140 + 100 * Math.sin( .01 * currentTime );
 		camera.position.x = d * Math.sin( phi ) * Math.cos( theta );
 		camera.position.y = d * Math.cos( phi );
 		camera.position.z = d * Math.sin( phi ) * Math.sin( theta );
