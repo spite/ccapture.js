@@ -36,7 +36,7 @@ CCapture.js is more or less [ryg's kkapture](http://www.farb-rausch.de/~fg/kkapt
 
 The library supports multiple export formats using modular encoders (`CCFrameEncoder):
 
-- `CCWebMEncoder` uses [Whammy.js](http://antimatter15.com/wp/2012/08/whammy-a-real-time-javascript-webm-encoder/) to create a WebM movie
+- `CCWebMEncoder` uses [WebM Writer for JavaScript](https://github.com/thenickdude/webm-writer-js/) to create a WebM movie
 - `CCPNGEncoder` and `CCJPEGEncoder` export PNG and JPEG files in a TAR file, respectively
 - `CCGIFEncoder` uses [gifjs](http://jnordberg.github.io/gif.js/) to create animated GIFs
 - `CCFFMpegServerEncoder` uses [ffmpegserver.js](https://github.com/greggman/ffmpegserver.js) to generate video on the server 
@@ -45,12 +45,12 @@ Forks, pull requests and code critiques are welcome!
 
 #### Using the code ####
 
-Include CCapture[.min].js and [Whammy.js](http://antimatter15.com/wp/2012/08/whammy-a-real-time-javascript-webm-encoder/) or [gifjs](http://jnordberg.github.io/gif.js/). 
+Include CCapture[.min].js and [WebM Writer](https://github.com/thenickdude/webm-writer-js) or [gifjs](http://jnordberg.github.io/gif.js/). 
 
 ```html
 <script src="CCapture.min.js"></script>
-<!-- Include Whammy if you want to export WebM -->
-<script src="Whammy.js"></script>
+<!-- Include WebM Writer if you want to export WebM -->
+<script src="webm-writer-0.2.0.js"></script>
 <!-- Include gifjs if you want to export GIF -->
 <script src="gif.js"></script>
 <!-- Include tar.js if you want to export PNG or JPEG -->
@@ -149,7 +149,7 @@ capturer.save( function( blob ) { /* ... */ } );
 
 CCapture.js only works on browsers that have a `canvas implementation.
 
-**Whammy.js** current version only works on a browser that supports the image/webp format. Exporting video is basically Chrome-only for now :( If you want to help to make it Firefox, Opera or even Internet Explorer compatible, please do!
+**WebM Writer** current version only works on a browser that supports the image/webp format. Exporting video is basically Chrome-only for now :( If you want to help to make it Firefox, Opera or even Internet Explorer compatible, please do!
 
 **gif.js** has some performance limitations, be careful if capturing a lot of frames.
 
@@ -171,7 +171,8 @@ There's some issues in which memory -mostly from accumulated frames- will not be
 
 #### Credits ####
 
-- Slightly modified version of [Whammy.js](https://github.com/antimatter15/whammy) (fixed variable size
+- [WebM Writer](https://github.com/thenickdude/webm-writer-js) 
+- Pre 1.0.9: Slightly modified version of [Whammy.js](https://github.com/antimatter15/whammy) (fixed variable size
    integer calculations)
 - Slightly modified version of [tar.js](https://github.com/beatgammit/tar-js) (fixed memory allocations for many files)
 - [download.js](http://danml.com/download.html)
