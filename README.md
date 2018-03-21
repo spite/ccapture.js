@@ -108,12 +108,15 @@ The complete list of parameters is:
 - ***timeLimit***: automatically stops and downloads when reaching that time (seconds). Very convenient for long captures: set it and forget it (remember autoSaveTime!)
 - ***autoSaveTime***: it will automatically download the captured data every n seconds (only available for webm/png/jpg)
 - ***startTime***: skip to that mark (seconds)
+- ***workersPath***: path to the gif worker script
 
-You can decide when to start the capturer. When you call the `.start()` method, the hooks are set, so from that point on `setTimeout`, `setInterval` and other methods that are hooked will behave a bit differently. When you have everything ready to start capturing, call:
+You can decide when to start the capturer. When you call the `.start()` method, the hooks are set, so from that point on `setTimeout`, `setInterval` and other methods that are hooked will behave a bit differently. When you have everything ready to start capturing, and your animation loop is running, call:
 
 ```js
 capturer.start();
 ```
+
+**requestAnimationFrame, setTimeout, etc. won't work as expected after capture is started. Make sure your animation loop is running**
 
 And then, in your `render()` method, after the frame is been drawn, call `.capture()` passing the canvas you want to capture.
 
