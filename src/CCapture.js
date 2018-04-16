@@ -1,4 +1,4 @@
-( function() { 
+( function() {
 
 "use strict";
 
@@ -40,15 +40,15 @@ if (!HTMLCanvasElement.prototype.toBlob) {
   if ("performance" in window == false) {
       window.performance = {};
   }
-  
+
   Date.now = (Date.now || function () {  // thanks IE8
 	  return new Date().getTime();
   });
 
   if ("now" in window.performance == false){
-    
+
     var nowOffset = Date.now();
-    
+
     if (performance.timing && performance.timing.navigationStart){
       nowOffset = performance.timing.navigationStart
     }
@@ -60,7 +60,7 @@ if (!HTMLCanvasElement.prototype.toBlob) {
 
 })();
 
- 
+
 function pad( n ) {
 	return String("0000000" + n).slice(-7);
 }
@@ -114,14 +114,17 @@ CCFrameEncoder.prototype.step = function() { console.log( 'Step not set!' ) }
 
 function CCTarEncoder( settings ) {
 
-	CCFrameEncoder.call( this, settings );
-	
-	this.extension = '.tar'
-	this.mimeType = 'application/x-tar'
-	this.fileExtension = '';
+  CCFrameEncoder.call( this, settings );
 
-	this.tape = null
-	this.count = 0;
+  this.extension = '.tar'
+  this.mimeType = 'application/x-tar'
+  this.fileExtension = '';
+  this.baseFilename = this.filename;
+
+  this.tape = null
+  this.count = 0;
+  this.part = 1;
+  this.frames = 0;
 
 }
 
@@ -129,35 +132,49 @@ CCTarEncoder.prototype = Object.create( CCFrameEncoder.prototype );
 
 CCTarEncoder.prototype.start = function(){
 
-	this.dispose();
+  this.dispose();
 
 };
 
 CCTarEncoder.prototype.add = function( blob ) {
 
-	var fileReader = new FileReader();
-	fileReader.onload = function() {
-		this.tape.append( pad( this.count ) + this.fileExtension, new Uint8Array( fileReader.result ) );
+  var fileReader = new FileReader();
+  fileReader.onload = function() {
+    this.tape.append( pad( this.count ) + this.fileExtension, new Uint8Array( fileReader.result ) );
 
-		//if( this.settings.autoSaveTime > 0 && ( this.frames.length / this.settings.framerate ) >= this.settings.autoSaveTime ) {
+    if( this.settings.autoSaveTime > 0 && ( this.frames / this.settings.framerate ) >= this.settings.autoSaveTime ) {
+      this.save( function( blob ) {
+        this.filename = this.baseFilename + '-part-' + pad( this.part );
+        download( blob, this.filename + this.extension, this.mimeType );
+        var count = this.count;
+        this.dispose();
+        this.count = count+1;
+        this.part++;
+        this.filename = this.baseFilename + '-part-' + pad( this.part );
+        this.frames = 0;
+        this.step();
+      }.bind( this ) )
+    } else {
+      this.count++;
+      this.frames++;
+      this.step();
+    }
 
-		this.count++;
-		this.step();
-	}.bind( this );
-	fileReader.readAsArrayBuffer(blob);
+  }.bind( this );
+  fileReader.readAsArrayBuffer(blob);
 
 }
 
 CCTarEncoder.prototype.save = function( callback ) {
 
-	callback( this.tape.save() );
+  callback( this.tape.save() );
 
 }
 
 CCTarEncoder.prototype.dispose = function() {
 
-	this.tape = new Tar();
-	this.count = 0;
+  this.tape = new Tar();
+  this.count = 0;
 
 }
 
@@ -216,7 +233,7 @@ function CCWebMEncoder( settings ) {
 	CCFrameEncoder.call( this, settings );
 
 	settings.quality = ( settings.quality / 100 ) || .8;
-	
+
 	this.extension = '.webm'
 	this.mimeType = 'video/webm'
 	this.baseFilename = this.filename;
@@ -339,7 +356,7 @@ CCFFMpegServerEncoder.prototype.safeToProceed = function() {
 
   	this.canvas = document.createElement( 'canvas' );
   	this.ctx = this.canvas.getContext( '2d' );
-	
+
 }
 
 CCGIFEncoder.prototype = Object.create( CCFrameEncoder );
@@ -368,7 +385,7 @@ CCGIFEncoder.prototype.add = function( canvas ) {
 CCGIFEncoder.prototype.stop = function() {
 
 	this.encoder.finish();
-	
+
 }
 
 CCGIFEncoder.prototype.save = function( callback ) {
@@ -404,7 +421,7 @@ function CCGIFEncoder( settings ) {
 		quality: settings.quality,
 		workerScript: settings.workersPath + 'gif.worker.js'
 	} );
-  		
+
     this.encoder.on( 'progress', function( progress ) {
         if ( this.settings.onProgress ) {
             this.settings.onProgress( progress )
@@ -483,7 +500,7 @@ function CCapture( settings ) {
 	_settings.timeLimit = _settings.timeLimit || 0;
 	_settings.frameLimit = _settings.frameLimit || 0;
 	_settings.startTime = _settings.startTime || 0;
-	
+
 	var _timeDisplay = document.createElement( 'div' );
 	_timeDisplay.style.position = 'absolute';
 	_timeDisplay.style.left = _timeDisplay.style.top = 0
@@ -549,11 +566,11 @@ function CCapture( settings ) {
 		_oldPerformanceNow = window.performance.now,
 		_oldGetTime = window.Date.prototype.getTime;
 	// Date.prototype._oldGetTime = Date.prototype.getTime;
-	
+
 	var media = [];
 
 	function _init() {
-		
+
 		_log( 'Capturer start' );
 
 		_startTime = window.Date.now();
@@ -569,8 +586,8 @@ function CCapture( settings ) {
 		};
 
 		window.setTimeout = function( callback, time ) {
-			var t = { 
-				callback: callback, 
+			var t = {
+				callback: callback,
 				time: time,
 				triggerTime: _time + time
 			};
@@ -588,8 +605,8 @@ function CCapture( settings ) {
 			}
 		};
 		window.setInterval = function( callback, time ) {
-			var t = { 
-				callback: callback, 
+			var t = {
+				callback: callback,
 				time: time,
 				triggerTime: _time + time
 			};
@@ -622,13 +639,13 @@ function CCapture( settings ) {
 		Object.defineProperty( HTMLAudioElement.prototype, 'currentTime', { get: hookCurrentTime } )
 
 	}
-	
+
 	function _start() {
 		_init();
 		_encoder.start();
 		_capturing = true;
 	}
-	
+
 	function _stop() {
 		_capturing = false;
 		_encoder.stop();
@@ -643,7 +660,7 @@ function CCapture( settings ) {
 		//_oldRequestAnimationFrame( _process );
 		_call( _process );
 	}
-	
+
 	function _destroy() {
 		_log( 'Capturer stop' );
 		window.setTimeout = _oldSetTimeout;
@@ -720,7 +737,7 @@ function CCapture( settings ) {
 	}
 
 	function _capture( canvas ) {
-	
+
 		if( _capturing ) {
 
 			if( _settings.motionBlurFrames > 2 ) {
@@ -741,17 +758,17 @@ function CCapture( settings ) {
 			}
 
 		}
-		
+
 	}
-	
+
 	function _process() {
-		
+
 		var step = 1000 / _settings.framerate;
 		var dt = ( _frameCount + _intermediateFrameCount / _settings.motionBlurFrames ) * step;
 
 		_time = _startTime + dt;
 		_performanceTime = _performanceStartTime + dt;
-		
+
 		media.forEach( function( v ) {
 			v._hookedTime = dt / 1000;
 		} );
@@ -776,14 +793,14 @@ function CCapture( settings ) {
 				continue;
 			}
 		}
-		
+
 		_requestAnimationFrameCallbacks.forEach( function( cb ) {
      		_call( cb, _time - g_startTime );
         } );
         _requestAnimationFrameCallbacks = [];
 
 	}
-	
+
 	function _save( callback ) {
 
 		if( !callback ) {
@@ -793,9 +810,9 @@ function CCapture( settings ) {
 			}
 		}
 		_encoder.save( callback );
-		
+
 	}
-	
+
 	function _log( message ) {
 		if( _verbose ) console.log( message );
 	}
