@@ -164,14 +164,17 @@ CCFrameEncoder.prototype.step = function() { console.log( 'Step not set!' ) }
 
 function CCTarEncoder( settings ) {
 
-	CCFrameEncoder.call( this, settings );
+  CCFrameEncoder.call( this, settings );
 
-	this.extension = '.tar'
-	this.mimeType = 'application/x-tar'
-	this.fileExtension = '';
+  this.extension = '.tar'
+  this.mimeType = 'application/x-tar'
+  this.fileExtension = '';
+  this.baseFilename = this.filename;
 
-	this.tape = null
-	this.count = 0;
+  this.tape = null
+  this.count = 0;
+  this.part = 1;
+  this.frames = 0;
 
 }
 
@@ -179,35 +182,49 @@ CCTarEncoder.prototype = Object.create( CCFrameEncoder.prototype );
 
 CCTarEncoder.prototype.start = function(){
 
-	this.dispose();
+  this.dispose();
 
 };
 
 CCTarEncoder.prototype.add = function( blob ) {
 
-	var fileReader = new FileReader();
-	fileReader.onload = function() {
-		this.tape.append( pad( this.count ) + this.fileExtension, new Uint8Array( fileReader.result ) );
+  var fileReader = new FileReader();
+  fileReader.onload = function() {
+    this.tape.append( pad( this.count ) + this.fileExtension, new Uint8Array( fileReader.result ) );
 
-		//if( this.settings.autoSaveTime > 0 && ( this.frames.length / this.settings.framerate ) >= this.settings.autoSaveTime ) {
+    if( this.settings.autoSaveTime > 0 && ( this.frames / this.settings.framerate ) >= this.settings.autoSaveTime ) {
+      this.save( function( blob ) {
+        this.filename = this.baseFilename + '-part-' + pad( this.part );
+        download( blob, this.filename + this.extension, this.mimeType );
+        var count = this.count;
+        this.dispose();
+        this.count = count+1;
+        this.part++;
+        this.filename = this.baseFilename + '-part-' + pad( this.part );
+        this.frames = 0;
+        this.step();
+      }.bind( this ) )
+    } else {
+      this.count++;
+      this.frames++;
+      this.step();
+    }
 
-		this.count++;
-		this.step();
-	}.bind( this );
-	fileReader.readAsArrayBuffer(blob);
+  }.bind( this );
+  fileReader.readAsArrayBuffer(blob);
 
 }
 
 CCTarEncoder.prototype.save = function( callback ) {
 
-	callback( this.tape.save() );
+  callback( this.tape.save() );
 
 }
 
 CCTarEncoder.prototype.dispose = function() {
 
-	this.tape = new Tar();
-	this.count = 0;
+  this.tape = new Tar();
+  this.count = 0;
 
 }
 
@@ -270,17 +287,17 @@ function CCWebMEncoder( settings ) {
 	this.extension = '.webm'
 	this.mimeType = 'video/webm'
 	this.baseFilename = this.filename;
+  this.framerate = settings.framerate;
 
-	this.frames = [];
+	this.frames = 0;
 	this.part = 1;
 
   this.videoWriter = new WebMWriter({
     quality: this.quality,
     fileWriter: null,
     fd: null,
-    frameRate: settings.framerate
-});
-
+    frameRate: this.framerate
+  });
 
 }
 
@@ -296,9 +313,7 @@ CCWebMEncoder.prototype.add = function( canvas ) {
 
   this.videoWriter.addFrame(canvas);
 
-	//this.frames.push( canvas.toDataURL('image/webp', this.quality) );
-
-	if( this.settings.autoSaveTime > 0 && ( this.frames.length / this.settings.framerate ) >= this.settings.autoSaveTime ) {
+	if( this.settings.autoSaveTime > 0 && ( this.frames / this.settings.framerate ) >= this.settings.autoSaveTime ) {
 		this.save( function( blob ) {
 			this.filename = this.baseFilename + '-part-' + pad( this.part );
 			download( blob, this.filename + this.extension, this.mimeType );
@@ -308,6 +323,7 @@ CCWebMEncoder.prototype.add = function( canvas ) {
 			this.step();
 		}.bind( this ) )
 	} else {
+    this.frames++;
 		this.step();
 	}
 
@@ -315,19 +331,19 @@ CCWebMEncoder.prototype.add = function( canvas ) {
 
 CCWebMEncoder.prototype.save = function( callback ) {
 
-//	if( !this.frames.length ) return;
-
   this.videoWriter.complete().then(callback);
-
-	/*var webm = Whammy.fromImageArray( this.frames, this.settings.framerate )
-	var blob = new Blob( [ webm ], { type: "octet/stream" } );
-	callback( blob );*/
 
 }
 
 CCWebMEncoder.prototype.dispose = function( canvas ) {
 
-	this.frames = [];
+	this.frames = 0;
+  this.videoWriter = new WebMWriter({
+    quality: this.quality,
+    fileWriter: null,
+    fd: null,
+    frameRate: this.framerate
+  });
 
 }
 
