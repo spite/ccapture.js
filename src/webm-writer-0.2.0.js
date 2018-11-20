@@ -206,20 +206,19 @@
 	} else {
 		window.ArrayBufferDataStream = ArrayBufferDataStream;
 	}
-}());"use strict";
 
-/**
- * Allows a series of Blob-convertible objects (ArrayBuffer, Blob, String, etc) to be added to a buffer. Seeking and
- * overwriting of blobs is allowed.
- * 
- * You can supply a FileWriter, in which case the BlobBuffer is just used as temporary storage before it writes it 
- * through to the disk.
- * 
- * By Nicholas Sherlock
- * 
- * Released under the WTFPLv2 https://en.wikipedia.org/wiki/WTFPL
- */
-(function() {
+    /**
+     * Allows a series of Blob-convertible objects (ArrayBuffer, Blob, String, etc) to be added to a buffer. Seeking and
+     * overwriting of blobs is allowed.
+     *
+     * You can supply a FileWriter, in which case the BlobBuffer is just used as temporary storage before it writes it
+     * through to the disk.
+     *
+     * By Nicholas Sherlock
+     *
+     * Released under the WTFPLv2 https://en.wikipedia.org/wiki/WTFPL
+     */
+
 	var BlobBuffer = function(fs) {
 		return function(destination) {
 			var
@@ -432,23 +431,21 @@
 	} else {
 		window.BlobBuffer = BlobBuffer(null);
 	}
-})();/**
- * WebM video encoder for Google Chrome. This implementation is suitable for creating very large video files, because
- * it can stream Blobs directly to a FileWriter without buffering the entire video in memory.
- * 
- * When FileWriter is not available or not desired, it can buffer the video in memory as a series of Blobs which are 
- * eventually returned as one composite Blob.
- * 
- * By Nicholas Sherlock.
- * 
- * Based on the ideas from Whammy: https://github.com/antimatter15/whammy
- * 
- * Released under the WTFPLv2 https://en.wikipedia.org/wiki/WTFPL
- */
 
-"use strict";
+    /**
+     * WebM video encoder for Google Chrome. This implementation is suitable for creating very large video files, because
+     * it can stream Blobs directly to a FileWriter without buffering the entire video in memory.
+     *
+     * When FileWriter is not available or not desired, it can buffer the video in memory as a series of Blobs which are
+     * eventually returned as one composite Blob.
+     *
+     * By Nicholas Sherlock.
+     *
+     * Based on the ideas from Whammy: https://github.com/antimatter15/whammy
+     *
+     * Released under the WTFPLv2 https://en.wikipedia.org/wiki/WTFPL
+     */
 
-(function() {
     var WebMWriter = function(ArrayBufferDataStream, BlobBuffer) {
         function extend(base, top) {
             var
