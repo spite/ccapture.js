@@ -9,10 +9,14 @@
 "use strict";
 
 (function(){
-    /*
+
+    var isNodeEnviroment = typeof module !== 'undefined' && typeof module.exports !== 'undefined';
+
+    /**
      * Create an ArrayBuffer of the given length and present it as a writable stream with methods
      * for writing data in different formats.
      */
+
     var ArrayBufferDataStream = function(length) {
         this.data = new Uint8Array(length);
         this.pos = 0;
@@ -200,12 +204,8 @@
             throw "ArrayBufferDataStream's pos lies beyond end of buffer";
         }
     };
-	
-	if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
-		module.exports = ArrayBufferDataStream;
-	} else {
-		window.ArrayBufferDataStream = ArrayBufferDataStream;
-	}
+
+    window.ArrayBufferDataStream = ArrayBufferDataStream;
 
     /**
      * Allows a series of Blob-convertible objects (ArrayBuffer, Blob, String, etc) to be added to a buffer. Seeking and
@@ -424,13 +424,9 @@
 				return writePromise;
 			};
 		};
-	};
+	}(isNodeEnviroment ? require('fs') : null);
 	
-	if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
-		module.exports = BlobBuffer(require('fs'));
-	} else {
-		window.BlobBuffer = BlobBuffer(null);
-	}
+	window.BlobBuffer = BlobBuffer;
 
     /**
      * WebM video encoder for Google Chrome. This implementation is suitable for creating very large video files, because
@@ -1086,7 +1082,7 @@
         };
     };
 
-    if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+    if (isNodeEnviroment) {
 	    module.exports = WebMWriter(ArrayBufferDataStream, BlobBuffer);
     } else {
 	    window.WebMWriter = WebMWriter(ArrayBufferDataStream, BlobBuffer);
