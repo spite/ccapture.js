@@ -330,5 +330,9 @@ struct posix_header {             // byte offset
 		this.out = utils.clean(blockSize);
 	};
 
-	window.Tar = Tar;
+	if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+		module.exports = Tar;
+	} else {
+		window.Tar = Tar;
+	}
 }());
