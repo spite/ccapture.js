@@ -2,7 +2,7 @@
   "name": "ccapture.js",
   "version": "1.0.9",
   "description": "A library to capture canvas-based animations at a fixed framerate",
-  "main": "build/CCapture.all.min.js",
+  "main": "src/CCapture.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
