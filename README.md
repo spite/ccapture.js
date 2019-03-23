@@ -109,6 +109,7 @@ The complete list of parameters is:
 - ***autoSaveTime***: it will automatically download the captured data every n seconds (only available for webm/png/jpg)
 - ***startTime***: skip to that mark (seconds)
 - ***workersPath***: path to the gif worker script
+- ***background***: background of the gif if canvas is transparent (default: white)
 
 You can decide when to start the capturer. When you call the `.start()` method, the hooks are set, so from that point on `setTimeout`, `setInterval` and other methods that are hooked will behave a bit differently. When you have everything ready to start capturing, and your animation loop is running, call:
 
