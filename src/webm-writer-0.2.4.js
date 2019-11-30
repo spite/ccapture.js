@@ -418,7 +418,7 @@
 							result.push(buffer[i].data);
 						}
 						
-						return new Blob(result, {mimeType: mimeType});
+						return new Blob(result, {type: mimeType});
 					});
 				}
 				
@@ -432,7 +432,8 @@
 	} else {
 		window.BlobBuffer = BlobBuffer(null);
 	}
-})();/**
+})();
+/**
  * WebM video encoder for Google Chrome. This implementation is suitable for creating very large video files, because
  * it can stream Blobs directly to a FileWriter without buffering the entire video in memory.
  * 
@@ -498,7 +499,9 @@
          */
         function renderAsWebP(canvas, quality) {
             var
-                frame = canvas.toDataURL('image/webp', {quality: quality});
+                frame = typeof canvas === 'string' && /^data:image\/webp/.test(canvas)
+                    ? canvas
+                    : canvas.toDataURL('image/webp', quality);
             
             return decodeBase64WebPDataURL(frame);
         }
@@ -626,7 +629,7 @@
                 DEFAULT_TRACK_NUMBER = 1,
             
                 writtenHeader = false,
-                videoWidth, videoHeight,
+                videoWidth = 0, videoHeight = 0,
                 
                 clusterFrameBuffer = [],
                 clusterStartTime = 0,
@@ -835,7 +838,9 @@
                 // Now we know where these top-level elements lie in the file:
                 seekPoints.SegmentInfo.positionEBML.data = fileOffsetToSegmentRelative(segmentInfo.offset);
                 seekPoints.Tracks.positionEBML.data = fileOffsetToSegmentRelative(tracks.offset);
-            };
+                
+	            writtenHeader = true;
+            }
             
             /**
              * Create a SimpleBlock keyframe header using these fields:
@@ -1036,23 +1041,21 @@
             }
             
             /**
-             * Add a frame to the video. Currently the frame must be a Canvas element.
+             * Add a frame to the video.
+             *
+             * @param {HTMLCanvasElement} canvas
+             * @param {Number} [overrideFrameDuration] - Set a duration for this frame (in milliseconds) that differs from the default
              */
-            this.addFrame = function(canvas) {
-                if (writtenHeader) {
-                    if (canvas.width != videoWidth || canvas.height != videoHeight) {
-                        throw "Frame size differs from previous frames";
-                    }
-                } else {
-                    videoWidth = canvas.width;
-                    videoHeight = canvas.height;
+            this.addFrame = function(canvas, overrideFrameDuration) {
+                if (!writtenHeader) {
+                    videoWidth = canvas.width || 0;
+                    videoHeight = canvas.height || 0;
     
                     writeHeader();
-                    writtenHeader = true;
                 }
     
                 var
-                    webP = renderAsWebP(canvas, {quality: options.quality});
+                    webP = renderAsWebP(canvas, options.quality);
                 
                 if (!webP) {
                     throw "Couldn't decode WebP frame, does the browser support WebP?";
@@ -1060,7 +1063,7 @@
                 
                 addFrameToCluster({
                     frame: extractKeyframeFromWebP(webP),
-                    duration: options.frameDuration
+                    duration: overrideFrameDuration === undefined ? options.frameDuration : overrideFrameDuration
                 });
             };
             
@@ -1071,6 +1074,10 @@
              * a Blob with the contents of the entire video.
              */
             this.complete = function() {
+            	if (!writtenHeader) {
+		            writeHeader();
+	            }
+	            
                 flushClusterFrameBuffer();
                 
                 writeCues();
