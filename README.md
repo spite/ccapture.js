@@ -50,7 +50,7 @@ Include CCapture[.min].js and [WebM Writer](https://github.com/thenickdude/webm-
 ```html
 <script src="CCapture.min.js"></script>
 <!-- Include WebM Writer if you want to export WebM -->
-<script src="webm-writer-0.2.0.js"></script>
+<script src="webm-writer-0.2.4.js"></script>
 <!-- Include gifjs if you want to export GIF -->
 <script src="gif.js"></script>
 <!-- Include tar.js if you want to export PNG or JPEG -->
