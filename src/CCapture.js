@@ -267,6 +267,26 @@ CCJPEGEncoder.prototype.add = function( canvas ) {
 
 }
 
+function CCWebPEncoder( settings ) {
+
+	CCTarEncoder.call( this, settings );
+
+	this.type = 'image/webp';
+	this.fileExtension = '.webp';
+	this.quality = ( settings.quality / 100 ) || .8;
+
+}
+
+CCWebPEncoder.prototype = Object.create( CCTarEncoder.prototype );
+
+CCWebPEncoder.prototype.add = function( canvas ) {
+
+	canvas.toBlob( function( blob ) {
+		CCTarEncoder.prototype.add.call( this, blob );
+	}.bind( this ), this.type, this.quality )
+
+}
+
 /*
 
 	WebM Encoder
@@ -633,6 +653,7 @@ function CCapture( settings ) {
 		ffmpegserver: CCFFMpegServerEncoder,
 		png: CCPNGEncoder,
 		jpg: CCJPEGEncoder,
+		webp: CCWebPEncoder,
 		'webm-mediarecorder': CCStreamEncoder
     };
 
