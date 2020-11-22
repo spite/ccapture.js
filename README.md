@@ -58,7 +58,7 @@ Include CCapture[.min].js and [WebM Writer](https://github.com/thenickdude/webm-
 <!-- Include download.js for easier file download -->
 <script src="download.js"></script>
 ```
-Or include the whole pack
+Or include the whole pack : /build/CCapture.all.min.js
 ```html
 <script src="CCapture.all.min.js"></script>
 ```
@@ -78,7 +78,7 @@ To create a CCapture object, write:
 var capturer = new CCapture( { format: 'webm' } );
 
 // Create a capturer that exports an animated GIF
-// Notices you have to specify the path to the gif.worker.js 
+// Notices you have to specify the path to the gif.worker.js : /src/gif.worker.js
 var capturer = new CCapture( { format: 'gif', workersPath: 'js/' } );
 
 // Create a capturer that exports PNG images in a TAR file
