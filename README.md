@@ -37,8 +37,9 @@ CCapture.js is more or less [ryg's kkapture](http://www.farb-rausch.de/~fg/kkapt
 The library supports multiple export formats using modular encoders (`CCFrameEncoder):
 
 - `CCWebMEncoder` uses [WebM Writer for JavaScript](https://github.com/thenickdude/webm-writer-js/) to create a WebM movie
+- `CCMJPGEncoder` uses [mjbuilder.js](http://ushiroad.com/mjpeg/) to create an MJPEG-AVI movie
 - `CCPNGEncoder`, `CCJPEGEncoder` and `CCWebPEncoder` export PNG, JPEG and WebP files in a TAR file, respectively
-- `CCGIFEncoder` uses [gifjs](http://jnordberg.github.io/gif.js/) to create animated GIFs
+- `CCGIFEncoder` uses [gif.js](http://jnordberg.github.io/gif.js/) to create animated GIFs
 - `CCFFMpegServerEncoder` uses [ffmpegserver.js](https://github.com/greggman/ffmpegserver.js) to generate video on the server
 
 Forks, pull requests and code critiques are welcome!
@@ -51,7 +52,9 @@ Include CCapture[.min].js and [WebM Writer](https://github.com/thenickdude/webm-
 <script src="CCapture.min.js"></script>
 <!-- Include WebM Writer if you want to export WebM -->
 <script src="webm-writer-0.2.0.js"></script>
-<!-- Include gifjs if you want to export GIF -->
+<!-- Include mjbuilder.js if you want to export MJPEG-AVI -->
+<script src="mjbuilder.js"></script>
+<!-- Include gif.js if you want to export GIF -->
 <script src="gif.js"></script>
 <!-- Include tar.js if you want to export PNG, JPEG or WebP -->
 <script src="tar.js"></script>
@@ -61,6 +64,14 @@ Include CCapture[.min].js and [WebM Writer](https://github.com/thenickdude/webm-
 Or include the whole pack
 ```html
 <script src="CCapture.all.min.js"></script>
+```
+Or a pack with everything needed for WebM
+```html
+<script src="CCapture.webm.min.js"></script>
+```
+Or a pack with everything needed for MJPEG
+```html
+<script src="CCapture.mjpg.min.js"></script>
 ```
 Or use npm or bower to install the [package](https://www.npmjs.com/package/ccapture.js):
 ```bash
@@ -77,8 +88,11 @@ To create a CCapture object, write:
 // Create a capturer that exports a WebM video
 var capturer = new CCapture( { format: 'webm' } );
 
+// Create a capturer that exports an MJPEG-AVI video
+var capturer = new CCapture( { format: 'mjpg' } );
+
 // Create a capturer that exports an animated GIF
-// Notices you have to specify the path to the gif.worker.js
+// Notice that you have to specify the path to gif.worker.js
 var capturer = new CCapture( { format: 'gif', workersPath: 'js/' } );
 
 // Create a capturer that exports PNG images in a TAR file
@@ -103,13 +117,13 @@ var capturer = new CCapture( {
 The complete list of parameters is:
 - ***framerate***: target framerate for the capture
 - ***motionBlurFrames***: supersampling of frames to create a motion-blurred frame (0 or 1 make no effect)
-- ***format***: webm/webp/gif/png/jpg/ffmpegserver
-- ***quality***: quality for webm/webp/jpg
+- ***format***: webm/webp/gif/png/jpg/mjpg/ffmpegserver
+- ***quality***: quality for webm/webp/jpg/mjpg
 - ***name***: name of the files to be exported. if no name is provided, a GUID will be generated
 - ***verbose***: dumps info on the console
 - ***display***: adds a widget with capturing info (WIP)
 - ***timeLimit***: automatically stops and downloads when reaching that time (seconds). Very convenient for long captures: set it and forget it (remember autoSaveTime!)
-- ***autoSaveTime***: it will automatically download the captured data every n seconds (only available for webm/webp/png/jpg)
+- ***autoSaveTime***: it will automatically download the captured data every n seconds (only available for webm/webp/png/jpg/mjpg)
 - ***startTime***: skip to that mark (seconds)
 - ***workersPath***: path to the gif worker script
 
