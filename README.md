@@ -1,5 +1,5 @@
 # CCapture.js - A library to capture canvas-based animations
-CCapture.js is a library to help capturing animations created with HTML5 `canvas` at a fixed framerate. 
+CCapture.js is a library to help capturing animations created with HTML5 `canvas` at a fixed framerate.
 
 - [What is CCapture.js and why would I need it?](#what-is-ccapturejs-and-why-would-i-need-it)
 - [Using the code](#using-the-code)
@@ -32,28 +32,31 @@ Methods supported so far:
 - `performance.now`
 - `HTMLVideoElement.prototype.currentTime`, `HTMLAudioElement.prototype.currentTime`
 
-CCapture.js is more or less [ryg's kkapture](http://www.farb-rausch.de/~fg/kkapture/) but for JavaScript and `canvas`. 
+CCapture.js is more or less [ryg's kkapture](http://www.farb-rausch.de/~fg/kkapture/) but for JavaScript and `canvas`.
 
 The library supports multiple export formats using modular encoders (`CCFrameEncoder):
 
 - `CCWebMEncoder` uses [WebM Writer for JavaScript](https://github.com/thenickdude/webm-writer-js/) to create a WebM movie
-- `CCPNGEncoder` and `CCJPEGEncoder` export PNG and JPEG files in a TAR file, respectively
-- `CCGIFEncoder` uses [gifjs](http://jnordberg.github.io/gif.js/) to create animated GIFs
-- `CCFFMpegServerEncoder` uses [ffmpegserver.js](https://github.com/greggman/ffmpegserver.js) to generate video on the server 
+- `CCMJPGEncoder` uses [mjbuilder.js](http://ushiroad.com/mjpeg/) to create an MJPEG-AVI movie
+- `CCPNGEncoder`, `CCJPEGEncoder` and `CCWebPEncoder` export PNG, JPEG and WebP files in a TAR file, respectively
+- `CCGIFEncoder` uses [gif.js](http://jnordberg.github.io/gif.js/) to create animated GIFs
+- `CCFFMpegServerEncoder` uses [ffmpegserver.js](https://github.com/greggman/ffmpegserver.js) to generate video on the server
 
 Forks, pull requests and code critiques are welcome!
 
 #### Using the code ####
 
-Include CCapture[.min].js and [WebM Writer](https://github.com/thenickdude/webm-writer-js) or [gifjs](http://jnordberg.github.io/gif.js/). 
+Include CCapture[.min].js and [WebM Writer](https://github.com/thenickdude/webm-writer-js) or [gifjs](http://jnordberg.github.io/gif.js/).
 
 ```html
 <script src="CCapture.min.js"></script>
 <!-- Include WebM Writer if you want to export WebM -->
 <script src="webm-writer-0.2.0.js"></script>
-<!-- Include gifjs if you want to export GIF -->
+<!-- Include mjbuilder.js if you want to export MJPEG-AVI -->
+<script src="mjbuilder.js"></script>
+<!-- Include gif.js if you want to export GIF -->
 <script src="gif.js"></script>
-<!-- Include tar.js if you want to export PNG or JPEG -->
+<!-- Include tar.js if you want to export PNG, JPEG or WebP -->
 <script src="tar.js"></script>
 <!-- Include download.js for easier file download -->
 <script src="download.js"></script>
@@ -61,6 +64,14 @@ Include CCapture[.min].js and [WebM Writer](https://github.com/thenickdude/webm-
 Or include the whole pack
 ```html
 <script src="CCapture.all.min.js"></script>
+```
+Or a pack with everything needed for WebM
+```html
+<script src="CCapture.webm.min.js"></script>
+```
+Or a pack with everything needed for MJPEG
+```html
+<script src="CCapture.mjpg.min.js"></script>
 ```
 Or use npm or bower to install the [package](https://www.npmjs.com/package/ccapture.js):
 ```bash
@@ -77,8 +88,11 @@ To create a CCapture object, write:
 // Create a capturer that exports a WebM video
 var capturer = new CCapture( { format: 'webm' } );
 
+// Create a capturer that exports an MJPEG-AVI video
+var capturer = new CCapture( { format: 'mjpg' } );
+
 // Create a capturer that exports an animated GIF
-// Notices you have to specify the path to the gif.worker.js 
+// Notice that you have to specify the path to gif.worker.js
 var capturer = new CCapture( { format: 'gif', workersPath: 'js/' } );
 
 // Create a capturer that exports PNG images in a TAR file
@@ -86,6 +100,9 @@ var capturer = new CCapture( { format: 'png' } );
 
 // Create a capturer that exports JPEG images in a TAR file
 var capturer = new CCapture( { format: 'jpg' } );
+
+// Create a capturer that exports WebP images in a TAR file
+var capturer = new CCapture( { format: 'webp' } );
 ```
 
 This creates a CCapture object to run at 60fps, non-verbose. You can tweak the object by setting parameters on the constructor:
@@ -100,13 +117,13 @@ var capturer = new CCapture( {
 The complete list of parameters is:
 - ***framerate***: target framerate for the capture
 - ***motionBlurFrames***: supersampling of frames to create a motion-blurred frame (0 or 1 make no effect)
-- ***format***: webm/gif/png/jpg/ffmpegserver
-- ***quality***: quality for webm/jpg
+- ***format***: webm/webp/gif/png/jpg/mjpg/ffmpegserver
+- ***quality***: quality for webm/webp/jpg/mjpg
 - ***name***: name of the files to be exported. if no name is provided, a GUID will be generated
 - ***verbose***: dumps info on the console
 - ***display***: adds a widget with capturing info (WIP)
 - ***timeLimit***: automatically stops and downloads when reaching that time (seconds). Very convenient for long captures: set it and forget it (remember autoSaveTime!)
-- ***autoSaveTime***: it will automatically download the captured data every n seconds (only available for webm/png/jpg)
+- ***autoSaveTime***: it will automatically download the captured data every n seconds (only available for webm/webp/png/jpg/mjpg)
 - ***startTime***: skip to that mark (seconds)
 - ***workersPath***: path to the gif worker script
 
@@ -155,7 +172,7 @@ CCapture.js only works on browsers that have a `canvas implementation.
 
 **The *autoSaveTime* parameter**
 
-Different browsers have different issues with big files: most break for big `Uint8Array` allocations, or when a file to downloads is larger than 1GB, etc. I haven't been able to find a solid solution for all, so I introduced the `autoSaveTime` parameter, just to prevent loss of large files. If used with a webm/png/jpg capturer, it will automatically compile, download and free the captured frames every *n* seconds specified in the parameter. The downloaded file will have the structure *{name}-part-00000n* and the extension (.webm or .tar). The files inside the TAR file will have the right number of sequence.
+Different browsers have different issues with big files: most break for big `Uint8Array` allocations, or when a file to downloads is larger than 1GB, etc. I haven't been able to find a solid solution for all, so I introduced the `autoSaveTime` parameter, just to prevent loss of large files. If used with a webm/webp/png/jpg capturer, it will automatically compile, download and free the captured frames every *n* seconds specified in the parameter. The downloaded file will have the structure *{name}-part-00000n* and the extension (.webm or .tar). The files inside the TAR file will have the right number of sequence.
 
 Use an `autoSaveTime` value that give you a file that is small enough to not trip the browser, but large enough to not generate a thousand part files. A value between 10 and 30 seconds for a 4K capture I've found works best: just make sure the file is under 1GB. For most regular, viewport-sized or even Full-HD captures it shouldn't be an issue, but keep in mind this issue.
 
@@ -171,7 +188,7 @@ There's some issues in which memory -mostly from accumulated frames- will not be
 
 #### Credits ####
 
-- [WebM Writer](https://github.com/thenickdude/webm-writer-js) 
+- [WebM Writer](https://github.com/thenickdude/webm-writer-js)
 - Pre 1.0.9: Slightly modified version of [Whammy.js](https://github.com/antimatter15/whammy) (fixed variable size
    integer calculations)
 - Slightly modified version of [tar.js](https://github.com/beatgammit/tar-js) (fixed memory allocations for many files)

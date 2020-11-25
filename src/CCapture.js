@@ -73,44 +73,6 @@ if (!HTMLCanvasElement.prototype.toBlob) {
  });
 }
 
-// @license http://opensource.org/licenses/MIT
-// copyright Paul Irish 2015
-
-
-// Date.now() is supported everywhere except IE8. For IE8 we use the Date.now polyfill
-//   github.com/Financial-Times/polyfill-service/blob/master/polyfills/Date.now/polyfill.js
-// as Safari 6 doesn't have support for NavigationTiming, we use a Date.now() timestamp for relative values
-
-// if you want values similar to what you'd get with real perf.now, place this towards the head of the page
-// but in reality, you're just getting the delta between now() calls, so it's not terribly important where it's placed
-
-
-(function(){
-
-  if ("performance" in window == false) {
-      window.performance = {};
-  }
-
-  Date.now = (Date.now || function () {  // thanks IE8
-	  return new Date().getTime();
-  });
-
-  if ("now" in window.performance == false){
-
-    var nowOffset = Date.now();
-
-    if (performance.timing && performance.timing.navigationStart){
-      nowOffset = performance.timing.navigationStart
-    }
-
-    window.performance.now = function now(){
-      return Date.now() - nowOffset;
-    }
-  }
-
-})();
-
-
 function pad( n ) {
 	return String("0000000" + n).slice(-7);
 }
@@ -264,6 +226,90 @@ CCJPEGEncoder.prototype.add = function( canvas ) {
 	canvas.toBlob( function( blob ) {
 		CCTarEncoder.prototype.add.call( this, blob );
 	}.bind( this ), this.type, this.quality )
+
+}
+
+function CCWebPEncoder( settings ) {
+
+	CCTarEncoder.call( this, settings );
+
+	this.type = 'image/webp';
+	this.fileExtension = '.webp';
+	this.quality = ( settings.quality / 100 ) || .8;
+
+}
+
+CCWebPEncoder.prototype = Object.create( CCTarEncoder.prototype );
+
+CCWebPEncoder.prototype.add = function( canvas ) {
+
+	canvas.toBlob( function( blob ) {
+		CCTarEncoder.prototype.add.call( this, blob );
+	}.bind( this ), this.type, this.quality )
+
+}
+
+function CCMJPGEncoder( settings ) {
+
+	CCFrameEncoder.call( this, settings );
+
+	this.extension = 'avi';
+	this.mimeType = 'video/avi';
+	this.baseFilename = this.filename;
+	this.builder = null;
+	this.part = 1;
+	this.frames = 0;
+	this.initialized = false;
+}
+
+CCMJPGEncoder.prototype = Object.create( CCFrameEncoder.prototype );
+
+CCMJPGEncoder.prototype.start = function() {
+
+	this.dispose();
+
+};
+
+CCMJPGEncoder.prototype.add = function( canvas ) {
+
+	if (!this.initialized) {
+		this.builder.setup(
+			canvas.width,
+			canvas.height,
+			this.settings.framerate,
+			(this.settings.quality / 100) || .8
+		);
+		this.initialized = true;
+	}
+
+	this.builder.addCanvasFrame( canvas );
+
+	if( this.settings.autoSaveTime > 0 && ( this.frames / this.settings.framerate ) >= this.settings.autoSaveTime ) {
+		this.save( function( blob ) {
+			this.filename = this.baseFilename + '-part-' + pad( this.part );
+			download( blob, this.filename + this.extension, this.mimeType );
+			this.frames = 0;
+			this.part++;
+			this.filename = this.baseFilename + '-part-' + pad( this.part );
+			this.step();
+		}.bind( this ) )
+	} else {
+		this.frames++;
+		this.step();
+	}
+
+}
+
+CCMJPGEncoder.prototype.save = function( callback ) {
+
+	this.builder.finish( callback );
+
+}
+
+CCMJPGEncoder.prototype.dispose = function() {
+
+	this.builder = new MotionJPEGBuilder();
+	this.initialized = false;
 
 }
 
@@ -631,8 +677,10 @@ function CCapture( settings ) {
 		gif: CCGIFEncoder,
 		webm: CCWebMEncoder,
 		ffmpegserver: CCFFMpegServerEncoder,
+		mjpg: CCMJPGEncoder,
 		png: CCPNGEncoder,
 		jpg: CCJPEGEncoder,
+		webp: CCWebPEncoder,
 		'webm-mediarecorder': CCStreamEncoder
     };
 
@@ -649,23 +697,6 @@ function CCapture( settings ) {
     if ("performance" in window == false) {
     	window.performance = {};
     }
-
-	Date.now = (Date.now || function () {  // thanks IE8
-		return new Date().getTime();
-	});
-
-	if ("now" in window.performance == false){
-
-		var nowOffset = Date.now();
-
-		if (performance.timing && performance.timing.navigationStart){
-			nowOffset = performance.timing.navigationStart
-		}
-
-		window.performance.now = function now(){
-			return Date.now() - nowOffset;
-		}
-	}
 
 	var _oldSetTimeout = window.setTimeout,
 		_oldSetInterval = window.setInterval,
