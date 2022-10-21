@@ -34,7 +34,7 @@ Methods supported so far:
 
 CCapture.js is more or less [ryg's kkapture](http://www.farb-rausch.de/~fg/kkapture/) but for JavaScript and `canvas`. 
 
-The library supports multiple export formats using modular encoders (`CCFrameEncoder):
+The library supports multiple export formats using modular encoders (`CCFrameEncoder`):
 
 - `CCWebMEncoder` uses [WebM Writer for JavaScript](https://github.com/thenickdude/webm-writer-js/) to create a WebM movie
 - `CCPNGEncoder` and `CCJPEGEncoder` export PNG and JPEG files in a TAR file, respectively
@@ -147,7 +147,7 @@ capturer.save( function( blob ) { /* ... */ } );
 
 #### Limitations ####
 
-CCapture.js only works on browsers that have a `canvas implementation.
+CCapture.js only works on browsers that have a `canvas` implementation.
 
 **WebM Writer** current version only works on a browser that supports the image/webp format. Exporting video is basically Chrome-only for now :( If you want to help to make it Firefox, Opera or even Internet Explorer compatible, please do!
 
