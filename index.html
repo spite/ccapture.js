@@ -1,0 +1,444 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — record canvas animations at a fixed framerate</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: #0a0b10; color: #e8e8ee;
+      font: 15px/1.6 system-ui, -apple-system, sans-serif;
+      padding: 0 1.25rem 4rem;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+    main, header, footer { max-width: 1100px; margin: 0 auto; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+    /* ---------- hero ---------- */
+    .hero {
+      position: relative; padding: 4.5rem 0 2.5rem; overflow: hidden;
+    }
+    .hero::before {
+      content: ""; position: absolute; inset: -30% -20% auto -20%; height: 520px; z-index: -1;
+      background:
+        radial-gradient(60% 80% at 20% 0%, hsl(348 80% 45% / .28), transparent 60%),
+        radial-gradient(50% 70% at 90% 10%, hsl(268 70% 45% / .22), transparent 60%);
+      filter: blur(8px);
+    }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: .5rem; font-size: 12.5px;
+      letter-spacing: .04em; color: #b9c0d0; background: #14151d; border: 1px solid #262838;
+      padding: .3rem .7rem; border-radius: 999px; margin-bottom: 1.25rem;
+    }
+    .eyebrow b { color: crimson; }
+    .hero h1 { margin: 0; font-size: clamp(34px, 6vw, 56px); line-height: 1.04; letter-spacing: -0.03em; }
+    .hero h1 b { color: crimson; }
+    .lede { margin: 1rem 0 0; font-size: clamp(16px, 2.2vw, 20px); color: #aab0be; max-width: 40rem; }
+    .lede strong { color: #e8e8ee; font-weight: 600; }
+    .cta { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.75rem; }
+    .btn {
+      display: inline-flex; align-items: center; gap: .5rem; text-decoration: none;
+      padding: .7rem 1.15rem; border-radius: 9px; font-weight: 600; font-size: 14.5px;
+      border: 1px solid transparent; transition: transform .12s ease, background .12s ease, border-color .12s ease;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn.primary { background: crimson; color: #fff; }
+    .btn.primary:hover { background: #e11d48; }
+    .btn.ghost { background: #12131a; border-color: #262838; color: #dfe3ec; }
+    .btn.ghost:hover { border-color: #3a3d52; }
+
+    /* ---------- code ---------- */
+    .codecard {
+      background: #0e0f16; border: 1px solid #23242f; border-radius: 12px;
+      overflow: hidden; box-shadow: 0 12px 40px #0006;
+    }
+    .codecard .bar {
+      display: flex; align-items: center; gap: 7px; padding: .6rem .85rem; border-bottom: 1px solid #1c1d28;
+    }
+    .codecard .bar i { width: 11px; height: 11px; border-radius: 50%; background: #333; display: block; }
+    .codecard .bar i:nth-child(1) { background: #ff5f56; }
+    .codecard .bar i:nth-child(2) { background: #ffbd2e; }
+    .codecard .bar i:nth-child(3) { background: #27c93f; }
+    .codecard .bar span { margin-left: .4rem; font-size: 12px; color: #6b7080; }
+    pre.code { margin: 0; padding: 1.1rem 1.25rem; overflow-x: auto; font-size: 13.5px; line-height: 1.7; }
+    pre.code .c { color: #6b7080; font-style: italic; }
+    pre.code .k { color: #ff6b81; }
+    pre.code .s { color: #9ece6a; }
+    pre.code .fn { color: #7aa2f7; }
+    pre.code .n { color: #e0af68; }
+    pre.code .hl { color: #ffd9df; }
+
+    /* ---------- sections ---------- */
+    section { margin-top: 3.5rem; scroll-margin-top: 1rem; }
+    .kicker {
+      font-size: 13px; text-transform: uppercase; letter-spacing: .09em;
+      color: #7b8194; margin: 0 0 .35rem; font-weight: 700;
+    }
+    .h2 { margin: 0 0 .5rem; font-size: clamp(22px, 3.5vw, 30px); letter-spacing: -0.02em; }
+    .sub { margin: 0 0 1.6rem; color: #9aa0ad; max-width: 42rem; }
+
+    /* two-column pitch */
+    .pitch { display: grid; gap: 1.75rem; grid-template-columns: 1fr; align-items: center; }
+    @media (min-width: 860px) { .pitch { grid-template-columns: 1fr 1.1fr; } }
+    .pitch ul { margin: 1rem 0 0; padding: 0; list-style: none; }
+    .pitch li { position: relative; padding-left: 1.6rem; margin: .55rem 0; color: #c3c8d4; }
+    .pitch li::before {
+      content: ""; position: absolute; left: 0; top: .55em; width: 8px; height: 8px;
+      border-radius: 2px; background: crimson; transform: rotate(45deg);
+    }
+    .pitch li b { color: #fff; font-weight: 600; }
+
+    /* generic card grid */
+    .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+
+    /* feature cards */
+    .feat {
+      background: #12131a; border: 1px solid #23242f; border-radius: 12px; padding: 1.15rem 1.2rem;
+    }
+    .feat .ic {
+      width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; margin-bottom: .8rem;
+      background: hsl(var(--h) 70% 50% / .14); border: 1px solid hsl(var(--h) 60% 50% / .3);
+    }
+    .feat .ic svg { width: 22px; height: 22px; fill: none; stroke: hsl(var(--h) 75% 70%); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .feat h3 { margin: 0 0 .3rem; font-size: 15.5px; }
+    .feat p { margin: 0; color: #9aa0ad; font-size: 13.5px; }
+
+    /* the three pieces */
+    .pieces { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+    @media (min-width: 760px) { .pieces { grid-template-columns: repeat(3, 1fr); } }
+    .piece {
+      background: linear-gradient(180deg, hsl(var(--h) 40% 14% / .5), #12131a);
+      border: 1px solid hsl(var(--h) 50% 40% / .35); border-radius: 12px; padding: 1.2rem;
+    }
+    .piece .tag {
+      display: inline-block; font: 600 11px/1 ui-monospace, monospace; letter-spacing: .03em;
+      color: hsl(var(--h) 75% 75%); background: hsl(var(--h) 70% 50% / .14);
+      border: 1px solid hsl(var(--h) 60% 50% / .35); padding: .3rem .5rem; border-radius: 6px; margin-bottom: .7rem;
+    }
+    .piece h3 { margin: 0 0 .35rem; font-size: 16px; }
+    .piece p { margin: 0; color: #9aa0ad; font-size: 13.5px; }
+
+    /* formats chips */
+    .chips { display: flex; flex-wrap: wrap; gap: .55rem; }
+    .chip {
+      display: inline-flex; align-items: baseline; gap: .5rem; background: #12131a;
+      border: 1px solid #23242f; border-radius: 999px; padding: .45rem .9rem; font-size: 13.5px;
+    }
+    .chip b { color: #fff; font-family: ui-monospace, monospace; font-size: 13px; }
+    .chip span { color: #8a90a0; font-size: 12.5px; }
+
+    /* ---------- example cards (unchanged visual language) ---------- */
+    .subhead {
+      font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+      color: #7b8194; margin: 1.9rem 0 .9rem; font-weight: 600;
+    }
+    .subhead:first-of-type { margin-top: 0; }
+    .card {
+      display: flex; flex-direction: column; text-decoration: none; color: inherit;
+      background: #12131a; border: 1px solid #23242f; border-radius: 12px;
+      overflow: hidden; transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+    }
+    .card:hover { transform: translateY(-3px); border-color: hsl(var(--h) 70% 55%); box-shadow: 0 10px 30px #0009; }
+    .thumb {
+      aspect-ratio: 16 / 10; display: grid; place-items: center; position: relative; isolation: isolate;
+      background:
+        radial-gradient(120% 120% at 20% 0%, hsl(var(--h) 75% 42% / .95), transparent 60%),
+        radial-gradient(120% 120% at 100% 100%, hsl(calc(var(--h) + 40) 75% 38% / .9), transparent 55%),
+        #0e0f16;
+    }
+    .thumb::after {
+      content: ""; position: absolute; inset: 0; z-index: -1; opacity: .12;
+      background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px);
+      background-size: 22px 22px;
+    }
+    .thumb svg {
+      width: 56px; height: 56px; fill: none; stroke: #fff; stroke-width: 2.4;
+      stroke-linecap: round; stroke-linejoin: round; opacity: .92; filter: drop-shadow(0 3px 8px #0007);
+    }
+    .body { padding: .85rem 1rem 1.05rem; }
+    .tag {
+      display: inline-block; font-size: 11px; letter-spacing: .04em;
+      color: hsl(var(--h) 70% 72%); background: hsl(var(--h) 70% 55% / .12);
+      border: 1px solid hsl(var(--h) 60% 50% / .3);
+      padding: .1rem .45rem; border-radius: 999px; margin-bottom: .5rem;
+    }
+    .body h3 { margin: 0 0 .25rem; font-size: 16px; }
+    .body p { margin: 0; color: #9aa0ad; font-size: 13.5px; }
+
+    footer {
+      margin-top: 4rem; padding-top: 1.75rem; border-top: 1px solid #1c1d28;
+      color: #6b7080; font-size: 13.5px; display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; justify-content: space-between;
+    }
+    footer a { color: #9aa0ad; text-decoration: none; }
+    footer a:hover { color: #cdd3e1; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <span class="eyebrow"><b>CCapture</b> · canvas capture, rebuilt for 2026</span>
+    <h1>Record canvas animations<br>at a <b>fixed framerate</b>.</h1>
+    <p class="lede">Your sketch renders as fast — or as slowly — as it needs to.
+      CCapture <strong>lies to it about what time it is</strong>, so the exported
+      video is perfectly smooth at exactly the framerate you asked for. 30, 60, 240 —
+      even a 4K frame that takes two seconds to draw.</p>
+    <div class="cta">
+      <a class="btn primary" href="#examples">Browse examples ↓</a>
+      <a class="btn ghost" href="https://github.com/spite/ccapture.js">GitHub</a>
+      <a class="btn ghost" href="README.md">Read the docs</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- ---------- the one line you add ---------- -->
+    <section id="start">
+      <p class="kicker">The least-intrusive API</p>
+      <h2 class="h2">One line in your render loop.</h2>
+      <div class="pitch">
+        <div>
+          <p class="sub">Make a recorder, <code>start()</code> it, and call
+            <code>capture(canvas)</code> once per frame. Drive motion from
+            <code>performance.now()</code> / the rAF timestamp like you already do —
+            CCapture warps that clock during capture so every frame lands on an exact
+            grid.</p>
+          <ul>
+            <li><b>No restructuring.</b> No <code>await</code>, no fixed <code>dt</code> — drop it into the loop you have.</li>
+            <li><b>As fast as your machine.</b> Capture is decoupled from wall-clock; it runs flat-out with bounded memory.</li>
+            <li><b>Self-finishing.</b> Set a <code>timeLimit</code> or <code>frameLimit</code> and the file downloads itself.</li>
+          </ul>
+        </div>
+        <div class="codecard">
+          <div class="bar"><i></i><i></i><i></i><span>sketch.js</span></div>
+<pre class="code"><span class="k">import</span> CCapture <span class="k">from</span> <span class="s">"ccapture.js"</span>;
+
+<span class="k">const</span> capturer = <span class="k">new</span> <span class="fn">CCapture</span>({ format: <span class="s">"mp4"</span>, framerate: <span class="n">60</span>, timeLimit: <span class="n">5</span> });
+capturer.<span class="fn">start</span>();
+
+<span class="k">function</span> <span class="fn">render</span>() {
+  <span class="fn">requestAnimationFrame</span>(render);   <span class="c">// your normal loop</span>
+  <span class="fn">drawMyScene</span>();                   <span class="c">// uses performance.now() — now warped</span>
+  <span class="hl">capturer.<span class="fn">capture</span>(canvas);</span>        <span class="c">// ← the only line you add</span>
+}
+<span class="fn">render</span>();</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- how it works: three pieces ---------- -->
+    <section>
+      <p class="kicker">How it works</p>
+      <h2 class="h2">A virtual clock, and two halves you can use alone.</h2>
+      <p class="sub">CCapture replaces the browser's notion of time with a clock that
+        advances one fixed step per captured frame — so anything driven by elapsed
+        time steps deterministically. It's three composable pieces:</p>
+      <div class="pieces">
+        <div class="piece" style="--h:210">
+          <span class="tag">TimeWarp</span>
+          <h3>Owns time</h3>
+          <p>Hooks <code>performance.now</code>, rAF, timers, <code>Date</code> and media
+             <code>currentTime</code>, advancing a virtual clock on demand. Knows nothing about canvases.</p>
+        </div>
+        <div class="piece" style="--h:158">
+          <span class="tag">FrameWrap</span>
+          <h3>Owns capture</h3>
+          <p>Takes drawn frames, applies motion blur, enforces limits, and feeds a
+             pluggable encoder. Knows nothing about time.</p>
+        </div>
+        <div class="piece" style="--h:348">
+          <span class="tag">CCapture</span>
+          <h3>Plug &amp; play</h3>
+          <p>Composes the two and drives them — the unified recorder for the common
+             "record a live animation" case.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- features ---------- -->
+    <section>
+      <p class="kicker">What's in the box</p>
+      <h2 class="h2">Modern encoders, real motion blur, sync.</h2>
+      <div class="grid">
+        <div class="feat" style="--h:210">
+          <div class="ic"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg></div>
+          <h3>WebCodecs, hardware-fast</h3>
+          <p>MP4 (H.264/AV1) &amp; WebM (VP9/VP8/AV1) via the browser's own encoder,
+             back-pressured so you run flat-out with bounded memory.</p>
+        </div>
+        <div class="feat" style="--h:270">
+          <div class="ic"><svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="5"/><path d="M15 8.5a5 5 0 0 1 0 7M18 6a8 8 0 0 1 0 12"/></svg></div>
+          <h3>Motion blur, GPU or CPU</h3>
+          <p>Averages N sub-frames per output frame — real shutter blur. Stays on the
+             GPU (WebGL2) when it can, no readback.</p>
+        </div>
+        <div class="feat" style="--h:48">
+          <div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12V7M12 12l4 2"/></svg></div>
+          <h3>Any framerate, smooth</h3>
+          <p>The virtual clock means a slow render still exports a flawless 30, 60 or
+             240 fps file — no dropped or doubled frames.</p>
+        </div>
+        <div class="feat" style="--h:308">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M3 15V9M7.5 19V5M12 17V7M16.5 20V4M21 14v-4"/></svg></div>
+          <h3>Frame-accurate audio</h3>
+          <p>Sample a track offline at each frame's exact time for visuals that line
+             up — and mux the audio right into the file.</p>
+        </div>
+        <div class="feat" style="--h:190">
+          <div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9v6l5-3Z"/></svg></div>
+          <h3>Video, frame-stepped</h3>
+          <p>Register a <code>&lt;video&gt;</code> and it seeks frame-by-frame in
+             lockstep — accurate, not a best-effort realtime grab.</p>
+        </div>
+        <div class="feat" style="--h:92">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M8 5H5v14h3M16 5h3v14h-3M9 12h6M12 9v6"/></svg></div>
+          <h3>Bring your own encoder</h3>
+          <p>A tiny interface (frame-by-frame or batch) wraps anything — WASM codecs,
+             sprite sheets, an upload. Register it as a format.</p>
+        </div>
+        <div class="feat" style="--h:172">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M8 6l-5 6 5 6M16 6l5 6-5 6"/></svg></div>
+          <h3>ESM, UMD &amp; TypeScript</h3>
+          <p>Import as native modules with no build, drop in the <code>&lt;script&gt;</code>
+             global, or lean on the bundled <code>.d.ts</code> types.</p>
+        </div>
+        <div class="feat" style="--h:0">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div>
+          <h3>Drop-in successor</h3>
+          <p>Same <code>start / capture / stop / save</code> flow as CCapture 1.x,
+             rebuilt for today's browsers.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- formats ---------- -->
+    <section>
+      <p class="kicker">Formats</p>
+      <h2 class="h2">Pick an output; CCapture negotiates the codec.</h2>
+      <p class="sub">Codec strings are probed at runtime and odd/resized frames are
+        fitted to a valid coded size. WebCodecs is the default path; WebM falls back
+        to a legacy writer where it's missing.</p>
+      <div class="chips">
+        <span class="chip"><b>mp4</b><span>H.264 / AV1 · WebCodecs</span></span>
+        <span class="chip"><b>webm</b><span>VP9 / VP8 / AV1 · WebCodecs</span></span>
+        <span class="chip"><b>gif</b><span>256-color · gifenc</span></span>
+        <span class="chip"><b>gif-hq</b><span>gifski (opt-in)</span></span>
+        <span class="chip"><b>png</b><span>TAR sequence · alpha</span></span>
+        <span class="chip"><b>jpg</b><span>TAR sequence</span></span>
+        <span class="chip"><b>webp</b><span>TAR sequence · alpha</span></span>
+      </div>
+    </section>
+
+    <!-- ---------- examples ---------- -->
+    <section id="examples">
+      <p class="kicker">See it work</p>
+      <h2 class="h2">Examples</h2>
+      <p class="sub">Every example uses the same drop-in panel — pick a format,
+        framerate and motion blur, then record. Serve over HTTP
+        (<code>npm run serve</code>) and open this page; ES modules need it.</p>
+
+      <p class="subhead">Frameworks</p>
+      <div class="grid">
+        <a class="card" href="examples/three/index.html" style="--h:172">
+          <div class="thumb"><svg viewBox="0 0 48 48"><path d="M24 5 43 15v18L24 43 5 33V15Z"/><path d="M5 15l19 10 19-10M24 25v18"/></svg></div>
+          <div class="body"><span class="tag">WebGL</span><h3>Three.js</h3>
+            <p>A WebGL scene captured to a smooth fixed-rate MP4.</p></div>
+        </a>
+        <a class="card" href="examples/p5/index.html" style="--h:342">
+          <div class="thumb"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="5"/><circle cx="24" cy="24" r="12"/><circle cx="24" cy="24" r="19"/></svg></div>
+          <div class="body"><span class="tag">p5.js</span><h3>p5.js</h3>
+            <p>An ordinary p5 sketch — captured with one extra line.</p></div>
+        </a>
+        <a class="card" href="examples/gsap/index.html" style="--h:92">
+          <div class="thumb"><svg viewBox="0 0 48 48"><path d="M26 4 11 27h11l-2 17 17-24H26Z"/></svg></div>
+          <div class="body"><span class="tag">GSAP</span><h3>GSAP timeline</h3>
+            <p>A GSAP timeline scrubbed by the warped clock.</p></div>
+        </a>
+      </div>
+
+      <p class="subhead">Raw graphics</p>
+      <div class="grid">
+        <a class="card" href="examples/basic/index.html" style="--h:28">
+          <div class="thumb"><svg viewBox="0 0 48 48"><rect x="7" y="7" width="20" height="20" rx="3"/><circle cx="32" cy="32" r="11"/></svg></div>
+          <div class="body"><span class="tag">Canvas 2D</span><h3>Basic 2D</h3>
+            <p>A plain 2D-canvas sketch — the simplest starting point.</p></div>
+        </a>
+        <a class="card" href="examples/webgl/index.html" style="--h:270">
+          <div class="thumb"><svg viewBox="0 0 48 48"><path d="M4 30q10-18 20 0t20 0"/><path d="M4 39q10-18 20 0t20 0"/></svg></div>
+          <div class="body"><span class="tag">WebGL2</span><h3>Raw WebGL2</h3>
+            <p>A no-framework fragment shader (GPU motion blur).</p></div>
+        </a>
+        <a class="card" href="examples/webgpu/index.html" style="--h:210">
+          <div class="thumb"><svg viewBox="0 0 48 48"><path d="M24 7 44 41H4Z"/></svg></div>
+          <div class="body"><span class="tag">WebGPU</span><h3>WebGPU</h3>
+            <p>A WGSL shader, captured the very same way.</p></div>
+        </a>
+      </div>
+
+      <p class="subhead">Media &amp; audio</p>
+      <div class="grid">
+        <a class="card" href="examples/music/index.html" style="--h:285">
+          <div class="thumb"><svg viewBox="0 0 48 48"><circle cx="14" cy="36" r="5"/><circle cx="34" cy="31" r="5"/><path d="M19 36V10l20-4v25"/></svg></div>
+          <div class="body"><span class="tag">Audio + shader</span><h3>Music video</h3>
+            <p>Audio-reactive shader, motion blur, audio muxed in.</p></div>
+        </a>
+        <a class="card" href="examples/audio/index.html" style="--h:308">
+          <div class="thumb"><svg viewBox="0 0 48 48"><path d="M8 40V22M18 40V10M28 40V26M38 40V16"/></svg></div>
+          <div class="body"><span class="tag">Audio</span><h3>Audio-reactive</h3>
+            <p>Frame-accurate spectrum bars, with the audio muxed in.</p></div>
+        </a>
+        <a class="card" href="examples/video/index.html" style="--h:190">
+          <div class="thumb"><svg viewBox="0 0 48 48"><rect x="5" y="11" width="38" height="26" rx="4"/><path d="M21 19v10l9-5Z"/></svg></div>
+          <div class="body"><span class="tag">Video</span><h3>Video sync</h3>
+            <p>Frame-stepping a &lt;video&gt; in lockstep with capture.</p></div>
+        </a>
+        <a class="card" href="examples/overlay/index.html" style="--h:40">
+          <div class="thumb"><svg viewBox="0 0 48 48"><rect x="6" y="7" width="28" height="20" rx="3"/><rect x="14" y="21" width="28" height="20" rx="3"/></svg></div>
+          <div class="body"><span class="tag">Video + Audio</span><h3>Video + overlay</h3>
+            <p>Upload a video; record an audio-reactive overlay on it.</p></div>
+        </a>
+      </div>
+
+      <p class="subhead">Techniques &amp; combos</p>
+      <div class="grid">
+        <a class="card" href="examples/heavy/index.html" style="--h:0">
+          <div class="thumb"><svg viewBox="0 0 48 48"><path d="M24 5v11M24 32v11M5 24h11M32 24h11M11 11l8 8M29 29l8 8M37 11l-8 8M19 29l-8 8"/></svg></div>
+          <div class="body"><span class="tag">Perf</span><h3>Heavy scene</h3>
+            <p>A slow raymarcher captured smoothly — render cost doesn't matter.</p></div>
+        </a>
+        <a class="card" href="examples/slowmo/index.html" style="--h:48">
+          <div class="thumb"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="18"/><path d="M24 24V13M24 24l7 4"/></svg></div>
+          <div class="body"><span class="tag">240 fps</span><h3>Slow motion</h3>
+            <p>Capture a fast motion at 240 fps, retime for crisp slow-mo.</p></div>
+        </a>
+        <a class="card" href="examples/spritesheet/index.html" style="--h:205">
+          <div class="thumb"><svg viewBox="0 0 48 48"><rect x="6" y="6" width="36" height="36" rx="3"/><path d="M18 6v36M30 6v36M6 18h36M6 30h36"/></svg></div>
+          <div class="body"><span class="tag">Custom encoder</span><h3>Sprite sheet</h3>
+            <p>A bring-your-own encoder that tiles frames into one PNG grid.</p></div>
+        </a>
+        <a class="card" href="examples/alpha/index.html" style="--h:158">
+          <div class="thumb"><svg viewBox="0 0 48 48"><rect x="6" y="6" width="36" height="36" rx="3"/><path d="M6 6h18v18H6ZM24 24h18v18H24Z" fill="#fff" stroke="none"/></svg></div>
+          <div class="body"><span class="tag">Alpha</span><h3>Transparent</h3>
+            <p>PNG/WebP sequence with a transparent background for compositing.</p></div>
+        </a>
+        <a class="card" href="examples/split/index.html" style="--h:262">
+          <div class="thumb"><svg viewBox="0 0 48 48"><rect x="6" y="9" width="15" height="30" rx="2"/><rect x="27" y="9" width="15" height="30" rx="2"/></svg></div>
+          <div class="body"><span class="tag">Low-level API</span><h3>Lockstep split</h3>
+            <p>Two canvases, one shared TimeWarp → two frame-synced files.</p></div>
+        </a>
+        <a class="card" href="demo/index.html" style="--h:220">
+          <div class="thumb"><svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="7"/></svg></div>
+          <div class="body"><span class="tag">Reference</span><h3>Minimal demo</h3>
+            <p>The smallest possible capture loop, no UI.</p></div>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>MP4/WebM need WebCodecs · serve over HTTP for ES modules</span>
+    <span>
+      <a href="README.md">Docs</a> ·
+      <a href="https://github.com/spite/ccapture.js">GitHub</a> ·
+      MIT © Jaume Sanchez Elias
+    </span>
+  </footer>
+</body>
