@@ -1,0 +1,82 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — Music video</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; min-height: 100vh; background: #05060a; display: grid; place-content: center; gap: 1rem; color:#ccc; font:14px system-ui; }
+    canvas { border: 1px solid #333; max-width: 100vw; }
+    p { max-width: 720px; text-align: center; color: #888; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="720" height="720"></canvas>
+  <p>A shader that moves continuously <b>and</b> pulses with the audio. The bars'
+     worth of energy comes from offline analysis (frame-accurate), motion blur is
+     real because the shader keeps moving between sub-frames, and the audio is
+     muxed into the file. Built-in track, or drop your own.</p>
+
+  <script type="module">
+    import { createCaptureUI } from "../CaptureUI.js";
+
+    const canvas = document.getElementById("c");
+    const gl = canvas.getContext("webgl2");
+
+    const VS = `#version 300 es
+    in vec2 p; void main(){ gl_Position = vec4(p,0.,1.); }`;
+    const FS = `#version 300 es
+    precision highp float;
+    uniform vec2 uRes; uniform float uTime; uniform float uBass; out vec4 o;
+    void main(){
+      vec2 uv = (gl_FragCoord.xy*2.0 - uRes)/uRes.y;
+      float r = length(uv), ang = atan(uv.y, uv.x);
+      // tunnel coords + rotation over time
+      float z = 1.0/(r + 0.05) + uTime*0.8;
+      float a = ang + uTime*0.4 + uBass*2.5;
+      float pat = sin(z*3.0) + sin(a*6.0) + sin((z+a)*2.0);
+      float glow = (0.6 + uBass*1.8) / (r*4.0 + 0.4);
+      vec3 col = (0.5 + 0.5*cos(vec3(0.,2.,4.) + pat + uTime + uBass*3.0)) * glow;
+      o = vec4(col, 1.0);
+    }`;
+    function sh(t, src){ const s=gl.createShader(t); gl.shaderSource(s,src); gl.compileShader(s);
+      if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+    const prog = gl.createProgram();
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog); gl.useProgram(prog);
+    const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,3,-1,-1,3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog,"p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+    const uRes = gl.getUniformLocation(prog,"uRes"), uTime = gl.getUniformLocation(prog,"uTime"), uBass = gl.getUniformLocation(prog,"uBass");
+
+    // bass-heavy built-in track (kick + bassline + rising sweep)
+    function synth(dur = 6, sr = 44100) {
+      const len = Math.floor(dur*sr), buf = new OfflineAudioContext(1,len,sr).createBuffer(1,len,sr), d = buf.getChannelData(0);
+      const bass = [55, 55, 73, 49];
+      let ph = 0;
+      for (let i=0;i<len;i++){ const t=i/sr;
+        ph += 2*Math.PI*bass[Math.floor(t)%bass.length]/sr;
+        let s = Math.sin(ph)*0.3;
+        const beat = t % 0.5; if (beat < 0.1) s += Math.sin(2*Math.PI*50*beat)*Math.exp(-beat*26)*0.7;
+        s += Math.sin(2*Math.PI*(800+(t/dur)*4000)*t)*0.08;
+        d[i] = Math.max(-1, Math.min(1, s));
+      }
+      return buf;
+    }
+
+    function render(t, ctx) {
+      let bass = 0;
+      const f = ctx && ctx.analysis && ctx.analysis.frequency;
+      if (f) { for (let i = 0; i < 8; i++) bass += f[i]; bass = bass / 8 / 255; }
+      gl.viewport(0,0,canvas.width,canvas.height);
+      gl.uniform2f(uRes, canvas.width, canvas.height);
+      gl.uniform1f(uTime, t);
+      gl.uniform1f(uBass, bass);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+
+    createCaptureUI({
+      canvas, render, title: "Music video",
+      audio: synth(), analyze: true, accept: "audio/*",
+      onFile: async (file) => ({ audio: await new OfflineAudioContext(1,1,44100).decodeAudioData(await file.arrayBuffer()) }),
+    });
+  </script>
+</body>

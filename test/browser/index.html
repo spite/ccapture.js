@@ -1,0 +1,74 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture browser tests</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0; padding: 1.5rem; background: #0e0e12; color: #e6e6e6;
+      font: 14px/1.5 system-ui, sans-serif;
+    }
+    h1 { font-size: 18px; margin: 0 0 0.25rem; }
+    .caps { color: #9aa; font-size: 12px; margin-bottom: 1rem; }
+    .caps b { color: #cfe; font-weight: 600; }
+    #summary { font-size: 16px; font-weight: 700; margin: 1rem 0; }
+    ul { list-style: none; padding: 0; margin: 0; max-width: 900px; }
+    li { display: flex; gap: 0.75rem; align-items: baseline; padding: 5px 8px; border-radius: 6px; }
+    li:nth-child(odd) { background: #17171d; }
+    .mark { width: 1.2em; text-align: center; font-weight: 700; }
+    .pass .mark { color: #4ade80; }
+    .fail .mark { color: #f87171; }
+    .skip .mark { color: #888; }
+    .name { flex: 1; }
+    .fail .name { color: #fca5a5; }
+    .skip .name { color: #999; }
+    .ms { color: #667; font-variant-numeric: tabular-nums; font-size: 12px; }
+    .err { display: block; color: #fca5a5; font-size: 12px; margin: 2px 0 0 2.7rem; white-space: pre-wrap; }
+    .running { color: #fbbf24; }
+  </style>
+</head>
+<body>
+  <h1>CCapture — browser test suite</h1>
+  <div class="caps" id="caps">detecting…</div>
+  <div id="summary" class="running">running…</div>
+  <ul id="list"></ul>
+
+  <script type="module">
+    import { caps } from "./cases.js"; // importing registers all tests
+    import { runAll } from "./harness.js";
+
+    document.getElementById("caps").innerHTML =
+      `WebCodecs: <b>${caps.videoEncoder}</b> · WebGL2: <b>${caps.webgl2}</b> · ` +
+      `EXT_color_buffer_float: <b>${caps.colorFloat}</b><br>${navigator.userAgent}`;
+
+    const list = document.getElementById("list");
+    const summary = document.getElementById("summary");
+
+    const row = ({ name, status, error, ms }) => {
+      const li = document.createElement("li");
+      li.className = status;
+      const mark = status === "pass" ? "✓" : status === "fail" ? "✗" : "–";
+      li.innerHTML =
+        `<span class="mark">${mark}</span><span class="name"></span><span class="ms">${ms}ms</span>`;
+      li.querySelector(".name").textContent =
+        name + (status === "skip" ? ` (skipped: ${error})` : "");
+      if (status === "fail") {
+        const e = document.createElement("span");
+        e.className = "err";
+        e.textContent = error;
+        li.appendChild(e);
+      }
+      list.appendChild(li);
+    };
+
+    const result = await runAll(row);
+
+    summary.className = result.failed ? "fail" : "pass";
+    summary.textContent =
+      `${result.passed}/${result.total} passed` +
+      (result.skipped ? `, ${result.skipped} skipped` : "") +
+      (result.failed ? `, ${result.failed} FAILED` : " — all green");
+    summary.style.color = result.failed ? "#f87171" : "#4ade80";
+
+    window.__results = { ...result, caps };
+  </script>
+</body>

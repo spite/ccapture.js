@@ -1,0 +1,56 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — Video sync</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; min-height: 100vh; background: #111; display: grid; place-content: center; gap: 1rem; color: #ccc; font: 13px system-ui; }
+    canvas { background: #000; border: 1px solid #333; }
+    p { max-width: 640px; margin: 0 auto; color: #888; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="640" height="360"></canvas>
+  <p>
+    A <code>&lt;video&gt;</code> drawn to canvas, frame-stepped in lockstep with the
+    capture. CCapture seeks the video to each frame's exact time and waits for the
+    <code>seeked</code> event before drawing — so the exported file is frame-accurate
+    even though the source is a normal (variable-latency) video element.
+  </p>
+
+  <!-- Hidden source video; muted+loop so the idle preview animates. -->
+  <video id="video" src="video.mp4" muted loop playsinline crossorigin="anonymous"
+         style="display:none"></video>
+
+  <script type="module">
+    import { createCaptureUI } from "../CaptureUI.js";
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const video = document.getElementById("video");
+
+    // Draw the current video frame plus an overlay driven by the (warped) clock.
+    function render(t) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // A sweep bar + timecode, so you can verify the overlay and the video are
+      // in sync frame-for-frame in the export.
+      const x = ((t % 2) / 2) * canvas.width;
+      ctx.fillStyle = "rgba(220,20,60,0.85)";
+      ctx.fillRect(x, 0, 3, canvas.height);
+      ctx.fillStyle = "#0f0";
+      ctx.font = "20px monospace";
+      ctx.fillText(`${t.toFixed(2)}s`, 12, 30);
+    }
+
+    // Play during the idle preview; CCapture pauses + seeks it during capture.
+    video.play().catch(() => {});
+
+    createCaptureUI({
+      canvas,
+      render,
+      title: "Video sync",
+      duration: 8, // the sample clip is 8s
+      media: video, // ← register the element so it's frame-stepped
+    });
+  </script>
+</body>

@@ -1,0 +1,83 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — Audio-reactive overlay on a video</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; min-height: 100vh; background: #0b0b12; color: #eee;
+      font: 14px/1.5 system-ui, sans-serif; display: grid; gap: 1rem; justify-items: center; align-content: center; padding: 1.5rem; }
+    canvas { background: #000; border: 1px solid #333; max-width: 100%; }
+    p { max-width: 640px; text-align: center; color: #888; margin: 0; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="640" height="360"></canvas>
+  <p>Pick a video in the panel. Its audio drives the overlay (frame-accurate), and
+     is muxed back into the exported clip. Uploads stay in your browser.</p>
+
+  <script type="module">
+    import { createCaptureUI } from "../CaptureUI.js";
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const video = document.createElement("video");
+    video.muted = true;
+    video.playsInline = true;
+
+    function fit(w, h, max = 960) {
+      if (w > max) { h = Math.round((h * max) / w); w = max; }
+      return [w - (w % 2), h - (h % 2)];
+    }
+
+    function draw(freq, wave) {
+      const { width: w, height: h } = canvas;
+      if (video.readyState >= 2) ctx.drawImage(video, 0, 0, w, h);
+      else { ctx.fillStyle = "#000"; ctx.fillRect(0, 0, w, h); }
+      if (freq) {
+        const n = 64, bw = w / n;
+        for (let i = 0; i < n; i++) {
+          const v = freq[i] / 255;
+          const bh = v * h * 0.35;
+          ctx.fillStyle = `hsla(${200 - v * 190}, 90%, 55%, .75)`;
+          ctx.fillRect(i * bw, h - bh, bw - 1, bh);
+        }
+      }
+      if (wave) {
+        ctx.strokeStyle = "rgba(255,255,255,.5)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < wave.length; i++) {
+          const x = (i / wave.length) * w;
+          const y = h * 0.5 + ((wave[i] - 128) / 128) * h * 0.18;
+          i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
+
+    createCaptureUI({
+      canvas,
+      title: "Video + overlay",
+      analyze: true,
+      accept: "video/*",
+      duration: 6,
+      onFile: async (file) => {
+        const arrayBuffer = await file.arrayBuffer();
+        let audio = null;
+        try {
+          audio = await new OfflineAudioContext(1, 1, 44100).decodeAudioData(arrayBuffer.slice(0));
+        } catch {
+          audio = null; // no decodable audio track → flat overlay
+        }
+        video.src = URL.createObjectURL(file);
+        await new Promise((ok, err) => {
+          video.onloadeddata = ok;
+          video.onerror = () => err(new Error("couldn't load this video"));
+        });
+        [canvas.width, canvas.height] = fit(video.videoWidth, video.videoHeight);
+        draw();
+        return { media: video, audio };
+      },
+      render: (t, { analysis }) => draw(analysis && analysis.frequency, analysis && analysis.waveform),
+    });
+  </script>
+</body>

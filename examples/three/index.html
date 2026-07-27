@@ -1,0 +1,68 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — Three.js</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; background: #111; overflow: hidden; }
+  </style>
+  <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <script type="module">
+    import * as THREE from "three";
+    import { createCaptureUI } from "../CaptureUI.js";
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    document.body.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111118);
+    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 100);
+    camera.position.set(0, 0, 8);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    const key = new THREE.DirectionalLight(0xffffff, 2);
+    key.position.set(5, 5, 5);
+    scene.add(key);
+
+    const group = new THREE.Group();
+    scene.add(group);
+    const geo = new THREE.BoxGeometry(1, 1, 1);
+    for (let i = 0; i < 30; i++) {
+      const mat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color().setHSL(i / 30, 0.7, 0.5),
+        roughness: 0.4,
+      });
+      const cube = new THREE.Mesh(geo, mat);
+      const a = (i / 30) * Math.PI * 2;
+      cube.position.set(Math.cos(a) * 3, Math.sin(a) * 3, 0);
+      group.add(cube);
+    }
+
+    addEventListener("resize", () => {
+      renderer.setSize(innerWidth, innerHeight);
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+    });
+
+    // All motion derives from `t`; TimeWarp warps it during capture so the file
+    // is perfectly smooth regardless of per-frame render cost. A WebGL source +
+    // motion blur will auto-select the on-GPU blur backend.
+    function render(t) {
+      group.rotation.z = t * 0.6;
+      group.children.forEach((cube, i) => {
+        cube.rotation.x = t * (1 + i * 0.03);
+        cube.rotation.y = t * 0.8;
+      });
+      camera.position.x = Math.sin(t * 0.3) * 2;
+      camera.lookAt(0, 0, 0);
+      renderer.render(scene, camera);
+    }
+
+    createCaptureUI({ canvas: renderer.domElement, render, title: "Three.js" });
+  </script>
+</body>

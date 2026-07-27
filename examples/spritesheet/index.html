@@ -1,0 +1,80 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — Sprite sheet</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; min-height: 100vh; background: #0c0d13; display: grid; place-content: center; gap: 1rem; color:#ccc; font:14px system-ui; }
+    canvas { background: #14161f; border: 1px solid #333; image-rendering: pixelated; }
+    p { max-width: 640px; text-align: center; color: #888; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="256" height="256"></canvas>
+  <p>A custom <code>BatchEncoder</code> that tiles every captured frame into a
+     single sprite-sheet PNG — a ~30-line "bring your own encoder", registered as
+     the <code>sheet</code> format. Record the loop → one PNG grid downloads.</p>
+
+  <script type="module">
+    import { CCapture, BatchEncoder } from "../../src/index.js";
+    import { createCaptureUI } from "../CaptureUI.js";
+
+    // --- the custom encoder: all frames → one PNG grid ---
+    class SpriteSheetEncoder extends BatchEncoder {
+      constructor(params) {
+        super(params);
+        this.extension = "png";
+        this.mimeType = "image/png";
+        this.cell = params.cell || 128; // downscaled cell size
+      }
+      async encodeAll({ frameCount, width, height, getFrame }) {
+        const cols = Math.ceil(Math.sqrt(frameCount));
+        const rows = Math.ceil(frameCount / cols);
+        const cw = this.cell, ch = Math.round((this.cell * height) / width);
+        const sheet = document.createElement("canvas");
+        sheet.width = cols * cw;
+        sheet.height = rows * ch;
+        const sctx = sheet.getContext("2d");
+        const tmp = document.createElement("canvas");
+        tmp.width = width; tmp.height = height;
+        const tctx = tmp.getContext("2d");
+        for (let i = 0; i < frameCount; i++) {
+          tctx.putImageData(await getFrame(i), 0, 0);
+          sctx.drawImage(tmp, (i % cols) * cw, Math.floor(i / cols) * ch, cw, ch);
+          this.emit("progress", (i + 1) / frameCount);
+        }
+        return await new Promise((r) => sheet.toBlob(r, "image/png"));
+      }
+    }
+    CCapture.registerEncoder("sheet", SpriteSheetEncoder);
+
+    // --- a simple looping sprite (rotating, bobbing shape) ---
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d");
+    const DUR = 2; // loop length matches the duration control
+    function render(t) {
+      const { width: w, height: h } = canvas;
+      ctx.clearRect(0, 0, w, h);
+      const a = (t / DUR) * Math.PI * 2;
+      ctx.save();
+      ctx.translate(w / 2, h / 2 + Math.sin(a) * 30);
+      ctx.rotate(a);
+      ctx.fillStyle = `hsl(${(a * 57) % 360}, 80%, 55%)`;
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        const ang = (i / 5) * Math.PI * 2 - Math.PI / 2;
+        const r = i % 2 ? 26 : 60;
+        ctx[i ? "lineTo" : "moveTo"](Math.cos(ang) * r, Math.sin(ang) * r);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+    render(0);
+
+    createCaptureUI({
+      canvas, render, title: "Sprite sheet",
+      formats: ["sheet"], motionBlur: false,
+      framerates: [8, 12, 24], defaultFramerate: 12, duration: DUR,
+    });
+  </script>
+</body>

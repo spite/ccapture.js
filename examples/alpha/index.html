@@ -1,0 +1,49 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — Transparent capture</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; min-height: 100vh; background: #0c0d13; display: grid; place-content: center; gap: 1rem; color:#ccc; font:14px system-ui; }
+    /* checkerboard so transparency is visible */
+    #c { border: 1px solid #333; max-width: 100vw;
+      background-image:
+        linear-gradient(45deg, #2a2c38 25%, transparent 25%), linear-gradient(-45deg, #2a2c38 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #2a2c38 75%), linear-gradient(-45deg, transparent 75%, #2a2c38 75%);
+      background-size: 24px 24px; background-position: 0 0, 0 12px, 12px -12px, -12px 0; }
+    p { max-width: 640px; text-align: center; color: #888; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="640" height="480"></canvas>
+  <p>The canvas has a transparent background (checkerboard shows through). Record
+     as <b>PNG</b> (or WebP) to get an image sequence with alpha for compositing.
+     MP4 has no alpha; the PNG/WebP paths keep it.</p>
+
+  <script type="module">
+    import { createCaptureUI } from "../CaptureUI.js";
+
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d");
+
+    function render(t) {
+      const { width: w, height: h } = canvas;
+      ctx.clearRect(0, 0, w, h); // transparent background
+      ctx.save();
+      ctx.translate(w / 2, h / 2);
+      for (let i = 0; i < 6; i++) {
+        const a = t * 1.2 + (i / 6) * Math.PI * 2;
+        ctx.fillStyle = `hsla(${(i / 6) * 360}, 85%, 55%, 0.8)`;
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * 130, Math.sin(a) * 90, 55 + 20 * Math.sin(t * 2 + i), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+    render(0);
+
+    createCaptureUI({
+      canvas, render, title: "Transparent",
+      formats: ["png", "webp"], motionBlur: false,
+    });
+  </script>
+</body>

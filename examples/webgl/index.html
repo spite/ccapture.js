@@ -1,0 +1,74 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — Raw WebGL2</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; min-height: 100vh; background: #111; display: grid; place-content: center; }
+    canvas { border: 1px solid #333; max-width: 100vw; }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="720" height="720"></canvas>
+
+  <script type="module">
+    import { createCaptureUI } from "../CaptureUI.js";
+
+    // --- a plain WebGL2 fullscreen fragment shader (no framework) ---
+    const canvas = document.getElementById("c");
+    const gl = canvas.getContext("webgl2");
+
+    const VERT = `#version 300 es
+    in vec2 p;
+    void main() { gl_Position = vec4(p, 0.0, 1.0); }`;
+
+    const FRAG = `#version 300 es
+    precision highp float;
+    uniform vec2 uRes;
+    uniform float uTime;
+    out vec4 o;
+    void main() {
+      vec2 uv = (gl_FragCoord.xy * 2.0 - uRes) / uRes.y;
+      float t = uTime;
+      float v = sin(uv.x * 4.0 + t)
+              + sin(uv.y * 4.0 + t * 1.3)
+              + sin((uv.x + uv.y) * 3.0 + t * 0.7)
+              + sin(length(uv) * 6.0 - t * 2.0);
+      vec3 col = 0.5 + 0.5 * cos(vec3(0.0, 2.0, 4.0) + v + t);
+      o = vec4(col, 1.0);
+    }`;
+
+    function compile(type, src) {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+      return s;
+    }
+    const prog = gl.createProgram();
+    gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
+    gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG));
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
+
+    // fullscreen triangle
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, "p");
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+    const uRes = gl.getUniformLocation(prog, "uRes");
+    const uTime = gl.getUniformLocation(prog, "uTime");
+
+    // The only capture-related requirement: drive time from the (warped) clock.
+    function render(t) {
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.uniform2f(uRes, canvas.width, canvas.height);
+      gl.uniform1f(uTime, t);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+
+    createCaptureUI({ canvas, render, title: "Raw WebGL2" });
+  </script>
+</body>

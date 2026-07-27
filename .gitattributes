@@ -1,0 +1,14 @@
+# Normalize all text files to LF in the repo and on checkout, on every OS.
+# Prevents the Windows/WSL CRLF churn that shows every line as "changed".
+* text=auto eol=lf
+
+# Explicitly treat known binary assets as binary (never touch their bytes).
+*.webm binary
+*.mp4  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.wasm binary
+*.ico  binary

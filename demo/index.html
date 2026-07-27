@@ -1,0 +1,57 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — demo</title>
+  <style>
+    body { background: #111; color: #ccc; font-family: monospace; }
+    canvas { border: 1px solid #333; background: #fff; }
+  </style>
+</head>
+<body>
+  <p>Capturing 120 frames of MP4… check the console, then a download appears.</p>
+  <script type="module">
+    import CCapture from "../src/index.js";
+
+    const capturer = new CCapture({
+      format: "mp4",
+      framerate: 60,
+      quality: 90,
+      frameLimit: 120,
+      // motionBlurFrames: 8,   // uncomment for motion blur
+      verbose: true,
+      display: true,
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 1280;
+    canvas.height = 720;
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+
+    function draw(t) {
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "crimson";
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(t * Math.PI);
+      ctx.fillRect(-150, -20, 300, 40);
+      ctx.restore();
+    }
+
+    // Least-intrusive usage: an ordinary rAF loop with a single capture() call.
+    // While capturing, requestAnimationFrame is hooked, so capture() drives the
+    // loop as fast as the machine can render + encode. frameLimit stops it.
+    let t0 = null;
+    function render() {
+      requestAnimationFrame(render);
+      if (t0 === null) t0 = performance.now();
+      draw((performance.now() - t0) / 1000); // warped seconds
+      capturer.capture(canvas); // ← the only capture-related line
+    }
+
+    (async () => {
+      await capturer.start();
+      render();
+    })();
+  </script>
+</body>

@@ -1,0 +1,67 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — Heavy scene</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; min-height: 100vh; background: #111; display: grid; place-content: center; gap: 1rem; color:#ccc; font:14px system-ui; }
+    canvas { border: 1px solid #333; max-width: 100vw; }
+    p { max-width: 760px; text-align: center; color: #888; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="820" height="820"></canvas>
+  <p>A 96-step raymarcher — heavy enough to stutter live, especially with motion
+     blur (16 sub-frames per output frame). The export is still perfectly smooth,
+     because capture is non-realtime: each frame takes as long as it needs.</p>
+
+  <script type="module">
+    import { createCaptureUI } from "../CaptureUI.js";
+
+    const canvas = document.getElementById("c");
+    const gl = canvas.getContext("webgl2");
+
+    const VS = `#version 300 es
+    in vec2 p; void main(){ gl_Position = vec4(p,0.,1.); }`;
+    const FS = `#version 300 es
+    precision highp float;
+    uniform vec2 uRes; uniform float uTime; out vec4 o;
+    float map(vec3 p){ p.z += uTime*1.4; vec3 q = fract(p) - 0.5; return length(q) - 0.30; }
+    void main(){
+      vec2 uv = (gl_FragCoord.xy*2.0 - uRes)/uRes.y;
+      float a = uTime*0.3;
+      mat2 R = mat2(cos(a),-sin(a),sin(a),cos(a));
+      vec3 ro = vec3(0.0,0.0,-3.0);
+      vec3 rd = normalize(vec3(uv,1.5));
+      ro.xz *= R; rd.xz *= R;
+      float t = 0.0, d;
+      for(int i=0;i<96;i++){ vec3 p=ro+rd*t; d=map(p); if(d<0.001||t>18.0) break; t += d; }
+      vec3 col = vec3(0.02,0.03,0.05);
+      if(t < 18.0){
+        vec3 p = ro+rd*t; vec2 e = vec2(0.0015,0.0);
+        vec3 n = normalize(vec3(map(p+e.xyy)-map(p-e.xyy), map(p+e.yxy)-map(p-e.yxy), map(p+e.yyx)-map(p-e.yyx)));
+        float diff = max(dot(n, normalize(vec3(1.0,1.0,-1.0))), 0.0);
+        col = (0.25 + 0.75*diff) * (0.5 + 0.5*cos(vec3(0.,2.,4.) + t*0.35 + uTime));
+        col *= exp(-t*0.05);
+      }
+      o = vec4(col, 1.0);
+    }`;
+    function sh(t, src){ const s=gl.createShader(t); gl.shaderSource(s,src); gl.compileShader(s);
+      if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+    const prog = gl.createProgram();
+    gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog); gl.useProgram(prog);
+    const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,3,-1,-1,3]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog,"p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+    const uRes = gl.getUniformLocation(prog,"uRes"), uTime = gl.getUniformLocation(prog,"uTime");
+
+    function render(t){
+      gl.viewport(0,0,canvas.width,canvas.height);
+      gl.uniform2f(uRes, canvas.width, canvas.height);
+      gl.uniform1f(uTime, t);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+
+    createCaptureUI({ canvas, render, title: "Heavy scene" });
+  </script>
+</body>
