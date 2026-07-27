@@ -1,0 +1,45 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — GSAP</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; min-height: 100vh; background: #111; display: grid; place-content: center; }
+    canvas { background: #fff; border: 1px solid #333; }
+  </style>
+  <script src="https://unpkg.com/gsap@3.12.5/dist/gsap.min.js"></script>
+</head>
+<body>
+  <canvas id="canvas" width="800" height="450"></canvas>
+
+  <script type="module">
+    import { createCaptureUI } from "../CaptureUI.js";
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const dot = { x: 40, y: 40, hue: 0 };
+
+    // A GSAP timeline we scrub by hand to the (warped) clock, so it exports
+    // frame-accurately no matter the workload.
+    const tl = gsap.timeline({ paused: true });
+    tl.to(dot, { x: 720, duration: 1.5, ease: "power2.inOut" })
+      .to(dot, { y: 370, duration: 1.5, ease: "bounce.out" }, 0)
+      .to(dot, { hue: 300, duration: 3, ease: "none" }, 0);
+
+    function render(t) {
+      tl.time(t % tl.duration()); // loop while previewing; exact during capture
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = `hsl(${dot.hue}, 80%, 50%)`;
+      ctx.beginPath();
+      ctx.arc(dot.x, dot.y, 40, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    createCaptureUI({
+      canvas,
+      render,
+      title: "GSAP",
+      duration: Math.round(tl.duration()),
+    });
+  </script>
+</body>

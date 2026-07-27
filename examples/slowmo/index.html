@@ -1,0 +1,49 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — Slow motion</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; min-height: 100vh; background: #0c0d13; display: grid; place-content: center; gap: 1rem; color:#ccc; font:14px system-ui; }
+    canvas { background: #000; border: 1px solid #333; max-width: 100vw; }
+    p { max-width: 680px; text-align: center; color: #888; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="720" height="480"></canvas>
+  <p>A fast motion (many bounces per second) captured at up to <b>240 fps</b> —
+     something you can't screen-record. Retime the file to 30 fps in an editor for
+     up to 8× slow motion, every frame crisp.</p>
+
+  <script type="module">
+    import { createCaptureUI } from "../CaptureUI.js";
+
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d");
+    const balls = Array.from({ length: 7 }, (_, i) => ({
+      hue: (i / 7) * 360,
+      fx: 3 + i * 0.6,   // fast horizontal frequency
+      fy: 2.2 + i * 0.5, // fast vertical frequency
+      ph: i,
+    }));
+
+    function render(t) {
+      const { width: w, height: h } = canvas;
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, w, h);
+      for (const b of balls) {
+        const x = w / 2 + Math.sin(t * b.fx + b.ph) * (w / 2 - 40);
+        const y = h / 2 + Math.abs(Math.sin(t * b.fy + b.ph)) * -(h - 60) + (h - 30);
+        ctx.fillStyle = `hsl(${b.hue}, 85%, 55%)`;
+        ctx.beginPath();
+        ctx.arc(x, y, 18, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    render(0);
+
+    createCaptureUI({
+      canvas, render, title: "Slow motion",
+      framerates: [60, 120, 240], defaultFramerate: 240, duration: 2,
+    });
+  </script>
+</body>

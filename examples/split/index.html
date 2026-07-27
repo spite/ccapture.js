@@ -1,0 +1,106 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — Lockstep split (shared clock)</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; min-height: 100vh; background: #0c0d13; color: #ddd;
+      font: 14px/1.5 system-ui; display: grid; gap: 1rem; justify-items: center; align-content: center; padding: 1.5rem; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    figure { margin: 0; text-align: center; }
+    figcaption { color: #8a90a0; font-size: 12px; margin-top: 4px; }
+    canvas { border: 1px solid #333; background: #000; }
+    .controls { display: flex; gap: .5rem; align-items: center; }
+    button { padding: .5rem .9rem; border: 0; border-radius: 6px; font: inherit; cursor: pointer; color: #fff; background: crimson; }
+    button:disabled { background: #444; }
+    select, input { background:#14141c; color:#eee; border:1px solid #333; border-radius:6px; padding:.4rem; }
+    #status { color: #7fd1ff; min-height: 1.3em; }
+    p { max-width: 680px; text-align: center; color: #888; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <figure><canvas id="a" width="400" height="400"></canvas><figcaption>beauty.webm</figcaption></figure>
+    <figure><canvas id="b" width="400" height="400"></canvas><figcaption>matte.webm</figcaption></figure>
+  </div>
+  <div class="controls">
+    <label>FPS <select id="fps"><option>30</option><option selected>60</option></select></label>
+    <label>Duration <input type="number" id="dur" value="3" min="1" max="10" style="width:3.5em"> s</label>
+    <button id="rec">● Record both</button>
+  </div>
+  <div id="status">Two canvases, one shared clock — recorded to two files, frame-for-frame identical.</div>
+  <p>Uses the low-level API directly: one <code>TimeWarp</code> shared by two
+     <code>FrameWrap</code>s. Both are driven by the same <code>step()</code>, so
+     the two exports stay in perfect lockstep (e.g. a beauty pass + its matte).</p>
+
+  <script type="module">
+    import { FrameWrap, TimeWarp, nextTask } from "../../src/index.js";
+
+    const a = document.getElementById("a"), b = document.getElementById("b");
+    const actx = a.getContext("2d"), bctx = b.getContext("2d");
+    const status = document.getElementById("status");
+    const recBtn = document.getElementById("rec");
+
+    // Same geometry both sides; "beauty" is colored, "matte" is a white mask.
+    function scene(ctx, t, matte) {
+      const { width: w, height: h } = ctx.canvas;
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, w, h);
+      ctx.save();
+      ctx.translate(w / 2, h / 2);
+      const N = 9;
+      for (let i = 0; i < N; i++) {
+        const ang = (i / N) * Math.PI * 2 + t * 0.8;
+        const r = 120 + 30 * Math.sin(t * 1.6 + i);
+        ctx.fillStyle = matte ? "#fff" : `hsl(${(i / N) * 360 + t * 40}, 80%, 55%)`;
+        ctx.beginPath();
+        ctx.arc(Math.cos(ang) * r, Math.sin(ang) * r, 26 + 14 * Math.sin(t * 3 + i), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // realtime preview
+    let previewing = true;
+    function preview() {
+      if (!previewing) return;
+      const t = performance.now() / 1000;
+      scene(actx, t, false);
+      scene(bctx, t, true);
+      requestAnimationFrame(preview);
+    }
+    preview();
+
+    recBtn.addEventListener("click", async () => {
+      previewing = false;
+      recBtn.disabled = true;
+      const framerate = +document.getElementById("fps").value;
+      const frames = Math.round((+document.getElementById("dur").value || 3) * framerate);
+      const dt = 1000 / framerate;
+
+      const timewarp = new TimeWarp({ framerate });      // ONE shared clock
+      const beauty = new FrameWrap({ format: "webm", frameLimit: frames, name: "beauty" });
+      const matte = new FrameWrap({ format: "webm", frameLimit: frames, name: "matte" });
+
+      timewarp.start();
+      await beauty.start();
+      await matte.start();
+
+      while (beauty.capturing) {
+        const t = timewarp.time / 1000; // warped seconds, shared
+        scene(actx, t, false);
+        scene(bctx, t, true);
+        await beauty.capture(a);
+        await matte.capture(b);         // both from the same clock
+        status.textContent = `Capturing ${beauty.frameCount} / ${frames}…`;
+        timewarp.step(dt);              // advance the shared clock once
+        await nextTask();               // yield so the tab stays responsive
+      }
+      timewarp.stop();                  // both FrameWraps auto-saved at the limit
+
+      status.textContent = "Saved beauty.webm + matte.webm (two downloads).";
+      recBtn.disabled = false;
+      previewing = true;
+      preview();
+    });
+  </script>
+</body>

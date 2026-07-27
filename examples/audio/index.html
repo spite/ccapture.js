@@ -1,0 +1,75 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — Audio-reactive</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; min-height: 100vh; background: #0b0b12; display: grid; place-content: center; }
+    canvas { background: #000; border: 1px solid #333; max-width: 100vw; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="800" height="360"></canvas>
+
+  <script type="module">
+    import { createCaptureUI } from "../CaptureUI.js";
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    function draw(freq, wave) {
+      const { width: w, height: h } = canvas;
+      ctx.fillStyle = "#0b0b12";
+      ctx.fillRect(0, 0, w, h);
+      const n = 96, bw = w / n;
+      for (let i = 0; i < n; i++) {
+        const v = freq ? freq[i] / 255 : 0;
+        const bh = v * h * 0.9;
+        ctx.fillStyle = `hsl(${210 - v * 190}, 85%, 55%)`;
+        ctx.fillRect(i * bw, h - bh, bw - 1, bh);
+      }
+      if (wave) {
+        ctx.strokeStyle = "rgba(255,255,255,.35)";
+        ctx.beginPath();
+        for (let i = 0; i < wave.length; i++) {
+          const x = (i / wave.length) * w;
+          const y = (wave[i] / 255) * h;
+          i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
+
+    // A built-in tune so it works with no file (melody + rising sweep + kick).
+    function synthBuffer(dur = 6, sr = 44100) {
+      const len = Math.floor(dur * sr);
+      const buffer = new OfflineAudioContext(1, len, sr).createBuffer(1, len, sr);
+      const d = buffer.getChannelData(0);
+      const notes = [220, 277, 330, 440, 330, 262];
+      let phase = 0;
+      for (let i = 0; i < len; i++) {
+        const t = i / sr;
+        phase += (2 * Math.PI * notes[Math.floor(t * 2) % notes.length]) / sr;
+        let sVal = Math.sin(phase) * 0.28;
+        sVal += Math.sin(2 * Math.PI * (600 + (t / dur) * 5000) * t) * 0.12;
+        const beat = t % 0.5;
+        if (beat < 0.09) sVal += Math.sin(2 * Math.PI * 55 * beat) * Math.exp(-beat * 32) * 0.6;
+        d[i] = Math.max(-1, Math.min(1, sVal));
+      }
+      return buffer;
+    }
+
+    draw(); // idle
+
+    createCaptureUI({
+      canvas,
+      title: "Audio-reactive",
+      audio: synthBuffer(),        // built-in default; the file picker overrides it
+      analyze: true,               // precompute per-frame spectrum/waveform
+      accept: "audio/*",
+      onFile: async (file) => ({
+        audio: await new OfflineAudioContext(1, 1, 44100).decodeAudioData(await file.arrayBuffer()),
+      }),
+      render: (t, { analysis }) => draw(analysis && analysis.frequency, analysis && analysis.waveform),
+    });
+  </script>
+</body>

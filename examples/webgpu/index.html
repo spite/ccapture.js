@@ -1,0 +1,91 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — WebGPU</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; min-height: 100vh; background: #111; color: #ccc; display: grid; place-content: center; gap: 1rem; font: 14px system-ui; }
+    canvas { border: 1px solid #333; max-width: 100vw; }
+    p { max-width: 640px; text-align: center; color: #888; }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="720" height="720"></canvas>
+  <p id="note">Initializing WebGPU…</p>
+
+  <script type="module">
+    import { createCaptureUI } from "../CaptureUI.js";
+
+    const canvas = document.getElementById("c");
+    const note = document.getElementById("note");
+
+    async function init() {
+      if (!navigator.gpu) {
+        note.textContent = "WebGPU isn't available in this browser.";
+        return;
+      }
+      const adapter = await navigator.gpu.requestAdapter();
+      const device = await adapter.requestDevice();
+      const ctx = canvas.getContext("webgpu");
+      const format = navigator.gpu.getPreferredCanvasFormat();
+      ctx.configure({ device, format, alphaMode: "opaque" });
+
+      const shader = device.createShaderModule({
+        code: `
+        struct U { time: f32, w: f32, h: f32, pad: f32 };
+        @group(0) @binding(0) var<uniform> u: U;
+
+        @vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {
+          var p = array<vec2f,3>(vec2f(-1.0,-1.0), vec2f(3.0,-1.0), vec2f(-1.0,3.0));
+          return vec4f(p[i], 0.0, 1.0);
+        }
+        @fragment fn fs(@builtin(position) fc: vec4f) -> @location(0) vec4f {
+          let res = vec2f(u.w, u.h);
+          let uv = (fc.xy * 2.0 - res) / res.y;
+          let t = u.time;
+          let v = sin(uv.x*4.0 + t) + sin(uv.y*4.0 + t*1.3)
+                + sin((uv.x+uv.y)*3.0 + t*0.7) + sin(length(uv)*6.0 - t*2.0);
+          let col = 0.5 + 0.5 * cos(vec3f(0.0,2.0,4.0) + v + t);
+          return vec4f(col, 1.0);
+        }`,
+      });
+
+      const pipeline = device.createRenderPipeline({
+        layout: "auto",
+        vertex: { module: shader, entryPoint: "vs" },
+        fragment: { module: shader, entryPoint: "fs", targets: [{ format }] },
+        primitive: { topology: "triangle-list" },
+      });
+
+      const uniform = device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+      const bindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [{ binding: 0, resource: { buffer: uniform } }],
+      });
+
+      // Same capture contract: draw a frame at (warped) time t.
+      function render(t) {
+        device.queue.writeBuffer(uniform, 0, new Float32Array([t, canvas.width, canvas.height, 0]));
+        const encoder = device.createCommandEncoder();
+        const pass = encoder.beginRenderPass({
+          colorAttachments: [{
+            view: ctx.getCurrentTexture().createView(),
+            clearValue: { r: 0, g: 0, b: 0, a: 1 },
+            loadOp: "clear",
+            storeOp: "store",
+          }],
+        });
+        pass.setPipeline(pipeline);
+        pass.setBindGroup(0, bindGroup);
+        pass.draw(3);
+        pass.end();
+        device.queue.submit([encoder.finish()]);
+      }
+
+      note.textContent =
+        "Plain WebGPU (WGSL) — captured the same way. Note: GPU motion blur is WebGL2-only, so a WebGPU source uses the CPU blur backend.";
+      createCaptureUI({ canvas, render, title: "WebGPU" });
+    }
+
+    init();
+  </script>
+</body>

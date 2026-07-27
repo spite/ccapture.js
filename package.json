@@ -1,25 +1,53 @@
 {
   "name": "ccapture.js",
-  "version": "1.0.9",
-  "description": "A library to capture canvas-based animations at a fixed framerate",
-  "main": "build/CCapture.all.min.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "version": "2.0.0",
+  "description": "Capture canvas-based animations at a fixed framerate, with motion blur and modern encoders (WebCodecs).",
+  "type": "module",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "types": "./src/index.d.ts",
+  "unpkg": "build/ccapture.umd.min.js",
+  "jsdelivr": "build/ccapture.umd.min.js",
+  "exports": {
+    ".": { "types": "./src/index.d.ts", "import": "./src/index.js" },
+    "./CCapture": { "types": "./src/CCapture.d.ts", "import": "./src/CCapture.js" },
+    "./TimeWarp": { "types": "./src/TimeWarp.d.ts", "import": "./src/TimeWarp.js" },
+    "./FrameWrap": { "types": "./src/FrameWrap.d.ts", "import": "./src/FrameWrap.js" },
+    "./umd": "./build/ccapture.umd.min.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/spite/ccapture.js.git"
+  "files": [
+    "src",
+    "build"
+  ],
+  "scripts": {
+    "build": "esbuild src/umd.js --bundle --format=iife --target=es2020 --outfile=build/ccapture.umd.js && esbuild src/umd.js --bundle --format=iife --target=es2020 --minify --outfile=build/ccapture.umd.min.js",
+    "test": "node test/TimeWarp.test.js && node test/FrameWrap.test.js && node test/CCapture.test.js && node test/WebCodecsEncoder.test.js && node test/MotionBlur.test.js && node test/Modular.test.js",
+    "test:browser": "node test/browser/run.mjs",
+    "test:types": "tsc -p test/types/tsconfig.json",
+    "serve": "node test/browser/serve.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "esbuild": "0.24.0",
+    "playwright-core": "1.48.0",
+    "typescript": "5.6.3"
   },
   "keywords": [
     "capture",
     "canvas",
     "webgl",
-    "animation"
+    "webgpu",
+    "webcodecs",
+    "animation",
+    "motion-blur",
+    "video",
+    "gif"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spite/ccapture.js.git"
+  },
   "author": "Jaume Sanchez <the.spite@gmail.com> (https://www.clicktorelease.com)",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/spite/ccapture.js/issues"
-  },
   "homepage": "https://github.com/spite/ccapture.js#readme"
 }
