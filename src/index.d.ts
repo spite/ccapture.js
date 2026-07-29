@@ -255,6 +255,47 @@ export function renderAudioFrames(opts?: RenderAudioOptions): Promise<AudioFrame
 /** Yield a macrotask (keeps the tab responsive between frames in manual loops). */
 export function nextTask(): Promise<void>;
 
+// ---------- Deterministic video frames (WebCodecs) ----------
+
+export interface VideoSourceOptions {
+  /** A preloaded mp4box.js module (its default export). */
+  mp4box?: unknown;
+  /** URL to lazy-import mp4box.js from (default: a CDN ESM build). */
+  mp4boxUrl?: string;
+  /**
+   * WebCodecs decoder acceleration. Defaults to "prefer-software" for
+   * reliability (flaky H.264 hardware decoders can abort); set "prefer-hardware"
+   * or "no-preference" to change it.
+   */
+  hardwareAcceleration?: "no-preference" | "prefer-software" | "prefer-hardware";
+}
+
+/** Frame-accurate video decoder: `frameAt(seconds)` → the exact decoded frame. */
+export class VideoSource {
+  readonly codec: string;
+  readonly width: number;
+  readonly height: number;
+  readonly duration: number;
+  readonly frameCount: number;
+  /**
+   * The decoded frame at/or before `seconds`. Owned by the source — draw or
+   * encode it immediately; do not close it (freed on GOP change / close()).
+   */
+  frameAt(seconds: number): Promise<VideoFrame | null>;
+  /** Free all decoded frames. */
+  close(): void;
+}
+
+/**
+ * Create a frame-accurate {@link VideoSource} from an MP4 (URL / Blob /
+ * ArrayBuffer). Requires WebCodecs `VideoDecoder`. Bypasses the `<video>`
+ * element, so it's immune to the paused-seek "black frame" GPU quirk.
+ */
+export function createVideoSource(
+  input: string | Blob | ArrayBuffer | ArrayBufferView,
+  opts?: VideoSourceOptions
+): Promise<VideoSource>;
+
 // ---------- FrameWrap (capture only) ----------
 
 export class FrameWrap {

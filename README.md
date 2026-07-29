@@ -454,6 +454,46 @@ render();
 - Audio-reactive visuals that use the **Web Audio API** can't be frame-stepped
   (see caveats).
 
+> ⚠️ **Paused-video decode is GPU-dependent.** Frame-stepping pauses the
+> `<video>` and seeks it. On some GPUs a paused, seeked video won't decode a
+> drawable frame at all (`drawImage` comes back **black**) even though it plays
+> fine. That's a browser hardware-decode limitation. When you hit it, use the
+> WebCodecs video source below instead of the `<video>` element.
+
+**Deterministic frames via WebCodecs (`createVideoSource`)**
+
+For guaranteed frame-accuracy — no `<video>` element, no paused-seek black-frame
+quirk — decode the file yourself with WebCodecs. `createVideoSource()` demuxes an
+MP4 and decodes exact frames on demand; `frameAt(seconds)` returns the precise
+`VideoFrame`, which you draw (and which composes with your own timeline / the
+`media` time-mapping):
+
+```js
+import { CCapture, createVideoSource } from "ccapture.js";
+// or the opt-in subpath: import { createVideoSource } from "ccapture.js/video-source";
+
+const src = await createVideoSource("clip.mp4");        // URL / Blob / ArrayBuffer
+const capturer = new CCapture({ format: "mp4", framerate: 30, frameLimit: src.frameCount });
+
+await capturer.record(canvas, async (frame) => {
+  const t = frame / 30;                                  // capture seconds
+  const vf = await src.frameAt(t * 0.5);                 // e.g. 0.5× slow-motion
+  ctx.drawImage(vf, 0, 0, canvas.width, canvas.height);  // exact, never black
+});
+src.close();
+```
+
+- **MP4 only** for now (H.264/H.265/AV1/VP9 in an MP4 container); WebM is planned.
+- Requires WebCodecs `VideoDecoder` (Chrome, Edge, Safari, recent Firefox).
+- Defaults to a **software decoder** (`hardwareAcceleration: "prefer-software"`)
+  for determinism — flaky H.264 *hardware* decoders (the same ones that black out
+  a paused `<video>`) also abort under WebCodecs. Override with
+  `{ hardwareAcceleration: "prefer-hardware" }` if you want HW decode.
+- `mp4box.js` is **lazy-loaded from a CDN** only when `createVideoSource()` runs;
+  vendor it with `{ mp4box }` or `{ mp4boxUrl }`.
+- The returned `VideoFrame` is owned by the source — draw/encode it immediately,
+  don't `close()` it; call `src.close()` when finished.
+
 **Frame-accurate audio-reactive visuals**
 
 A realtime `AnalyserNode` reads audio at wall-clock time, so it desyncs during a

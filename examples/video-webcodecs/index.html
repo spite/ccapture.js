@@ -1,0 +1,140 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — WebCodecs video source</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; min-height: 100vh; background: #0c0d13; color: #ddd;
+      font: 14px/1.5 system-ui; display: grid; gap: 1rem; justify-items: center; align-content: center; padding: 1.5rem; }
+    canvas { border: 1px solid #333; background: #000; max-width: 100vw; }
+    .controls { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; justify-content: center; }
+    button { padding: .5rem .9rem; border: 0; border-radius: 6px; font: inherit; cursor: pointer; color: #fff; background: crimson; }
+    button:disabled { background: #444; }
+    select, input[type=file] { background:#14141c; color:#eee; border:1px solid #333; border-radius:6px; padding:.4rem; }
+    #status { color: #7fd1ff; min-height: 1.3em; text-align: center; max-width: 680px; }
+    p { max-width: 680px; text-align: center; color: #888; margin: 0 auto; }
+    code { color: #cdd3e1; }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="480" height="270"></canvas>
+  <div class="controls">
+    <label>MP4 <input type="file" id="file" accept="video/mp4"></label>
+    <label>Mapping
+      <select id="mode">
+        <option value="slowmo">offset + rate → 0.5× slow-mo</option>
+        <option value="pingpong">callback → ping-pong</option>
+        <option value="identity">1:1</option>
+      </select>
+    </label>
+    <button id="rec" disabled>● Record</button>
+  </div>
+  <div id="status">Loading decoder…</div>
+  <p>Decodes the MP4 itself via <b>WebCodecs</b> (<code>createVideoSource</code> →
+     demux + <code>VideoDecoder</code>) instead of a <code>&lt;video&gt;</code>
+     element — so frames are exact and never come out black, regardless of GPU.
+     Pick a mapping and record a WebM. Drop in your own MP4 to try it.</p>
+
+  <script type="module">
+    import { CCapture, createVideoSource } from "../../src/index.js";
+
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d");
+    const status = document.getElementById("status");
+    const recBtn = document.getElementById("rec");
+    const modeSel = document.getElementById("mode");
+    const fileInput = document.getElementById("file");
+
+    let src = null, D = 0, previewing = false;
+
+    function draw(frame, mode, vt) {
+      const { width: w, height: h } = canvas;
+      ctx.fillStyle = "#000"; ctx.fillRect(0, 0, w, h);
+      if (frame) {
+        const vr = (frame.displayWidth || src.width) / (frame.displayHeight || src.height) || 16 / 9;
+        let dw = w, dh = w / vr; if (dh > h) { dh = h; dw = h * vr; }
+        ctx.drawImage(frame, (w - dw) / 2, (h - dh) / 2, dw, dh);
+      }
+      ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(0, h - 44, w, 44);
+      ctx.fillStyle = "#fff"; ctx.font = "600 15px ui-monospace, monospace";
+      ctx.fillText(mode, 12, h - 25);
+      ctx.fillStyle = "#7fd1ff";
+      ctx.fillText(`video ${vt.toFixed(2)}s / ${D.toFixed(2)}s`, 12, h - 8);
+      const p = D ? Math.max(0, Math.min(1, vt / D)) : 0;
+      ctx.fillStyle = "crimson"; ctx.fillRect(0, h - 3, w * p, 3);
+    }
+
+    async function loadSource(input) {
+      recBtn.disabled = true; previewing = false;
+      status.textContent = "Decoding header…";
+      try {
+        if (src) src.close();
+        src = await createVideoSource(input);
+        D = src.duration || (src.frameCount / 30);
+        status.textContent = `Ready — ${src.codec}, ${src.width}×${src.height}, ${D.toFixed(2)}s, ${src.frameCount} frames.`;
+        recBtn.disabled = false;
+        previewing = true; preview();
+      } catch (e) {
+        status.textContent = "Could not open video: " + e.message;
+      }
+    }
+
+    // realtime preview: pull frames at wall-clock time (looped)
+    async function preview() {
+      if (!previewing || !src) return;
+      const vt = (performance.now() / 1000) % D;
+      try {
+        const f = await src.frameAt(vt);
+        if (!previewing) return; // a record/reload may have started during the await
+        draw(f, "preview", vt);
+      } catch { /* source closed / superseded — stop this preview loop */ return; }
+      if (previewing) requestAnimationFrame(preview);
+    }
+
+    function mapper(mode) {
+      if (mode === "slowmo") return { map: (t) => t * 0.5, timeLimit: D / 0.5, name: "wc-slowmo" };
+      if (mode === "pingpong") return { map: (t) => { const x = t % (2 * D); return x <= D ? x : 2 * D - x; }, timeLimit: 2 * D, name: "wc-pingpong" };
+      return { map: (t) => t, timeLimit: D, name: "wc-video" };
+    }
+
+    recBtn.addEventListener("click", async () => {
+      if (!src) return;
+      previewing = false;
+      recBtn.disabled = true; modeSel.disabled = true; fileInput.disabled = true;
+
+      const { map, timeLimit, name } = mapper(modeSel.value);
+      const framerate = 30;
+      const cap = new CCapture({ format: "webm", framerate, timeLimit, name });
+      cap.on("stop", () => {
+        status.textContent = `Saved ${name}.webm — ${cap.frameCount} frames.`;
+        recBtn.disabled = false; modeSel.disabled = false; fileInput.disabled = false;
+        previewing = true; preview();
+      });
+
+      await cap.start();
+      (async function render() {
+        if (!cap.capturing) return;
+        requestAnimationFrame(render);           // queued on the warped clock
+        const vt = map(cap.frameCount / framerate);
+        let frame = null;
+        try {
+          frame = await src.frameAt(vt);
+        } catch (e) {
+          status.textContent = "Decode error while capturing: " + e.message;
+          await cap.stop();
+          return;
+        }
+        draw(frame, modeSel.value, vt);
+        status.textContent = `Capturing frame ${cap.frameCount}…`;
+        cap.capture(canvas);
+      })();
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      const f = e.target.files[0];
+      if (f) loadSource(f);
+    });
+
+    // default sample
+    loadSource("../video/video.mp4");
+  </script>
+</body>
