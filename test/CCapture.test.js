@@ -163,6 +163,37 @@ test("registers media, pauses it, and steps its virtual currentTime", async () =
   await cc.stop();
 });
 
+test("maps media time with offset + rate", async () => {
+  const el = { pause: () => {} };
+  const cc = new CCapture({
+    format: "webm",
+    framerate: 60,
+    media: { element: el, offset: 2, rate: 0.5 },
+  });
+  cc.framewrap.encoder = mockEncoder();
+  await cc.start();
+  assert.ok(Math.abs(el.__ccHookedTime - 2) < 1e-6, "frame 0 primed to offset");
+  cc.step();
+  const s = cc.framewrap.frameStep / 1000;
+  assert.ok(Math.abs(el.__ccHookedTime - (2 + s * 0.5)) < 1e-6, "offset + rate");
+  await cc.stop();
+});
+
+test("maps media time with a callback", async () => {
+  const el = { pause: () => {} };
+  const cc = new CCapture({
+    format: "webm",
+    framerate: 60,
+    media: { element: el, time: (s) => 10 - s },
+  });
+  cc.framewrap.encoder = mockEncoder();
+  await cc.start();
+  cc.step();
+  const s = cc.framewrap.frameStep / 1000;
+  assert.ok(Math.abs(el.__ccHookedTime - (10 - s)) < 1e-6, "callback mapping applied");
+  await cc.stop();
+});
+
 test("stop() restores the real clock; setTimeout hooked only while capturing", async () => {
   const cc = new CCapture({ format: "webm" });
   cc.framewrap.encoder = mockEncoder();

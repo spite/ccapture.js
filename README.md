@@ -201,7 +201,7 @@ All options are passed to the `CCapture` constructor (capture options go to its
 | `frameLimit` | `0` | Output frames; auto-stops & saves at this count. `0` = unlimited. |
 | `autoSaveTime` | `0` | Seconds; if `>0`, downloads the capture in parts periodically. |
 | `startTime` | `0` | Seconds to skip into the animation before the first frame. |
-| `media` | `null` | A `<video>`/`<audio>` element (or array) to frame-step. See [capturing video](#capturing-a-video-or-audio-element). |
+| `media` | `null` | A `<video>`/`<audio>` element (or array) to frame-step — or `{ element, time }` / `{ element, offset, rate }` to drive it from your own timeline. See [capturing video](#capturing-a-video-or-audio-element). |
 | `hookMedia` | `true` | Hook `HTMLMediaElement` (`currentTime`/`play`) to frame-step media. |
 | `hookDate` | `true` | Warp `Date.now` + `Date.prototype.getTime`. See [the trade-off](#the-hookdate-trade-off). |
 | `hookValueOf` | `false` | Also warp `Date.prototype.valueOf`, so `+new Date()` is warped (needs `hookDate`). |
@@ -453,6 +453,55 @@ render();
 - `play()` is suppressed during capture (CCapture drives time by seeking).
 - Audio-reactive visuals that use the **Web Audio API** can't be frame-stepped
   (see caveats).
+
+**When the video isn't the clock — time mapping**
+
+By default `media` assumes **media time == capture time**: it seeks the element
+to the capture's elapsed seconds (1:1, from zero). That's the "the video *is* the
+timeline" case. If your app has its own timeline — a video sprite scrubbed from an
+animation clock, a start offset, a playback rate, ping-pong, etc. — tell CCapture
+how to map capture time onto the element's `currentTime`, and it still does the
+frame-accurate seek + `await seeked` for you:
+
+```js
+// Linear: start 3s in, at half speed  →  currentTime = 3 + t * 0.5
+new CCapture({ format: "mp4", media: { element: video, offset: 3, rate: 0.5 } });
+
+// Arbitrary: any capture-seconds → media-seconds function
+new CCapture({
+  format: "mp4",
+  media: { element: video, time: (t) => clip.start + clip.localTimeAt(t) },
+});
+```
+
+The result is clamped to the media's `[0, duration]` range and seeked each frame.
+Because you provide the mapping up front, CCapture won't fight your own
+`currentTime` writes (the auto-registration that normally kicks in on a
+`currentTime` write keeps your mapping instead of overwriting it).
+
+Without a mapping, an app with its own timeline has two options: pass one here, or
+opt out entirely (`hookMedia: false`) and scrub + `await seeked` yourself each
+frame. Prefer the mapping — the manual path means re-implementing the seek/await
+dance CCapture already does.
+
+After each seek CCapture waits for the frame to be ready — `seeked`, then a
+`createImageBitmap(video)` that forces the frame to decode — before your `render`
+draws, so `drawImage`/`texImage2D` gets the seeked frame rather than a stale one.
+
+> ⚠️ **Paused-video decode is browser/GPU-dependent.** Frame-stepping *pauses* the
+> `<video>` and seeks it. On some GPUs/drivers a paused, seeked video won't produce
+> a decodable frame at all — `drawImage` (and even `createImageBitmap`) come back
+> **black** — while the very same video draws fine when playing. This is a Chrome
+> hardware-decode limitation, not something the library can force. If you hit it,
+> the reliable path is to decode frames yourself with the **WebCodecs
+> `VideoDecoder`** (demux + decode by timestamp) and draw those, rather than
+> relying on the `<video>` element. Keeping the element in the DOM and composited
+> helps on the GPUs where it works at all.
+
+> **three.js `VideoTexture`:** deterministic capture *pauses* the video, so
+> `requestVideoFrameCallback` won't fire a steady stream on its own. Set
+> `videoTexture.needsUpdate = true` after each captured frame so the seeked frame
+> is re-uploaded to the GPU (subject to the same paused-decode caveat above).
 
 **Frame-accurate audio-reactive visuals**
 

@@ -233,15 +233,31 @@ class TimeWarp {
    * reads/writes `currentTime`, but call it explicitly for a `<video>` you only
    * ever draw with `drawImage` (which never touches `currentTime`).
    */
-  addMedia(element) {
+  addMedia(element, map) {
     if (!this.hookMedia) return; // media tampering opted out
-    if (!element || this.#media.includes(element)) return;
+    if (!element) return;
+    const existing = this.#media.find((m) => m.el === element);
+    if (existing) {
+      // Attach or replace a capture→media time mapping on an element that was
+      // already registered (e.g. auto-registered on a `currentTime` write).
+      if (typeof map === "function") existing.map = map;
+      return;
+    }
     element.__ccHooked = true;
     element.__ccHookedTime = mediaDescriptor
       ? mediaDescriptor.get.call(element) || 0
       : 0;
     if (typeof element.pause === "function") element.pause();
-    this.#media.push(element);
+    this.#media.push({ el: element, map: typeof map === "function" ? map : null });
+  }
+
+  /**
+   * Seek every registered media element to the current frame time (applying any
+   * per-element time mapping) and await completion — WITHOUT advancing the clock.
+   * CCapture calls this once at start so frame 0 lands on the mapped/offset time.
+   */
+  async syncMedia() {
+    return this.#syncMedia();
   }
 
   #restore() {
@@ -315,14 +331,27 @@ class TimeWarp {
     console.error("[TimeWarp] callback error:", e);
   }
 
+  /** Map capture seconds → media currentTime for one registered element. */
+  #mediaTime(m, seconds) {
+    if (!m.map) return seconds; // default: media time == capture time
+    try {
+      const t = m.map(seconds);
+      return typeof t === "number" && isFinite(t) ? t : seconds;
+    } catch (e) {
+      this.#onError(e);
+      return seconds;
+    }
+  }
+
   /** Fire-and-forget: set virtual currentTime and scrub, without awaiting seeks. */
   #updateMedia() {
     const seconds = this.frameTime / 1000;
     for (const m of this.#media) {
-      m.__ccHookedTime = seconds;
+      const t = this.#mediaTime(m, seconds);
+      m.el.__ccHookedTime = t;
       if (mediaDescriptor) {
         try {
-          mediaDescriptor.set.call(m, seconds);
+          mediaDescriptor.set.call(m.el, t);
         } catch {
           /* ignore un-seekable media */
         }
@@ -336,22 +365,23 @@ class TimeWarp {
     const seconds = this.frameTime / 1000;
     const waits = [];
     for (const m of this.#media) {
-      m.__ccHookedTime = seconds;
+      const mapped = this.#mediaTime(m, seconds);
+      m.el.__ccHookedTime = mapped;
       if (!mediaDescriptor) continue;
 
-      let target = seconds;
-      const dur = m.duration;
+      let target = Math.max(0, mapped); // guard negative offsets
+      const dur = m.el.duration;
       if (typeof dur === "number" && isFinite(dur) && dur > 0) {
-        target = Math.min(seconds, dur);
+        target = Math.min(target, dur);
       }
       let current;
       try {
-        current = mediaDescriptor.get.call(m);
+        current = mediaDescriptor.get.call(m.el);
       } catch {
         continue;
       }
       if (Math.abs(current - target) < 1e-4) continue; // already there
-      waits.push(this.#seek(m, target));
+      waits.push(this.#seek(m.el, target));
     }
     if (waits.length) await Promise.all(waits);
   }
@@ -362,18 +392,35 @@ class TimeWarp {
       const finish = () => {
         if (done) return;
         done = true;
-        media.removeEventListener("seeked", finish);
+        media.removeEventListener("seeked", onSeeked);
         resolve();
       };
-      media.addEventListener("seeked", finish, { once: true });
+      // `seeked` means currentTime updated — but the decoded frame may not be
+      // ready for drawImage/texImage2D yet, so drawing immediately can grab a
+      // stale/blank frame (black output). requestVideoFrameCallback would be the
+      // "presented" signal, but it does NOT reliably fire for a paused video.
+      // createImageBitmap(video) forces the current frame to decode on demand,
+      // independent of the presentation pipeline — so once it resolves the frame
+      // is ready to draw. Audio (no videoWidth) just resolves on 'seeked'.
+      const onSeeked = () => {
+        const isVideo = typeof media.videoWidth === "number";
+        if (isVideo && typeof createImageBitmap === "function") {
+          createImageBitmap(media).then(
+            (bmp) => { if (bmp && bmp.close) bmp.close(); finish(); },
+            () => finish()
+          );
+        } else {
+          finish();
+        }
+      };
+      media.addEventListener("seeked", onSeeked, { once: true });
       try {
         mediaDescriptor.set.call(media, time);
       } catch {
         finish();
         return;
       }
-      // setTimeout is hooked, so use the real one as a safety net for media that
-      // never fires 'seeked' (not loaded, not seekable).
+      // Hard safety net for media that never fires 'seeked' (not loaded/seekable).
       originals.setTimeout.call(target, finish, 2000);
     });
   }

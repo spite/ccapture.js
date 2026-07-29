@@ -1,0 +1,123 @@
+<head>
+  <meta charset="utf-8" />
+  <title>CCapture — Video time mapping</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; min-height: 100vh; background: #0c0d13; color: #ddd;
+      font: 14px/1.5 system-ui; display: grid; gap: 1rem; justify-items: center; align-content: center; padding: 1.5rem; }
+    canvas { border: 1px solid #333; background: #000; max-width: 100vw; }
+    .controls { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; justify-content: center; }
+    button { padding: .5rem .9rem; border: 0; border-radius: 6px; font: inherit; cursor: pointer; color: #fff; background: crimson; }
+    button:disabled { background: #444; }
+    select { background:#14141c; color:#eee; border:1px solid #333; border-radius:6px; padding:.45rem; }
+    #status { color: #7fd1ff; min-height: 1.3em; text-align: center; }
+    p { max-width: 680px; text-align: center; color: #888; margin: 0 auto; }
+    code { color: #cdd3e1; }
+    .note { font-size: 12.5px; color: #7b8194; }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="480" height="270"></canvas>
+  <div class="controls">
+    <label>Mapping
+      <select id="mode">
+        <option value="slowmo">offset + rate → 0.5× slow-mo</option>
+        <option value="pingpong">time callback → ping-pong</option>
+        <option value="identity">none (video time = capture time)</option>
+      </select>
+    </label>
+    <button id="rec">● Record</button>
+  </div>
+  <div id="status">Drives a <code>&lt;video&gt;</code> from a capture→media time mapping, so the app owns the timeline.</div>
+  <p>The <code>media</code> option normally assumes <b>video time = capture time</b>.
+     Here the video is scrubbed from our own timeline via
+     <code>{ element, offset, rate }</code> or a <code>time(t)</code> callback —
+     CCapture still does the frame-accurate seek. Records a WebM.</p>
+  <p class="note">Note: frame-stepped <code>&lt;video&gt;</code> capture depends on the
+     browser decoding <em>paused</em> seeks. On some GPUs the video frame comes out
+     black (the overlay, driven by the mapped time, still shows the mapping working).
+     See the README for details.</p>
+
+  <script type="module">
+    import { CCapture } from "../../src/index.js";
+
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d");
+    const status = document.getElementById("status");
+    const recBtn = document.getElementById("rec");
+    const modeSel = document.getElementById("mode");
+
+    const video = document.createElement("video");
+    video.src = "../video/video.mp4";
+    video.muted = true; video.loop = true; video.playsInline = true;
+    video.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";
+    document.body.appendChild(video);
+
+    await new Promise((r) => {
+      if (video.readyState >= 1) r();
+      else video.addEventListener("loadedmetadata", r, { once: true });
+    });
+    const D = video.duration || 2;
+
+    function draw(mode, mappedT) {
+      const { width: w, height: h } = canvas;
+      ctx.fillStyle = "#000"; ctx.fillRect(0, 0, w, h);
+      const vr = video.videoWidth / video.videoHeight || 16 / 9;
+      let dw = w, dh = w / vr; if (dh > h) { dh = h; dw = h * vr; }
+      ctx.drawImage(video, (w - dw) / 2, (h - dh) / 2, dw, dh);
+      // Overlay driven by the mapped time — visible even if the video is black.
+      ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(0, h - 46, w, 46);
+      ctx.fillStyle = "#fff"; ctx.font = "600 15px ui-monospace, monospace";
+      ctx.fillText(`${mode}`, 12, h - 26);
+      ctx.fillStyle = "#7fd1ff";
+      ctx.fillText(`video ${mappedT.toFixed(2)}s / ${D.toFixed(2)}s`, 12, h - 8);
+      const p = Math.max(0, Math.min(1, mappedT / D));
+      ctx.fillStyle = "crimson"; ctx.fillRect(0, h - 3, w * p, 3);
+    }
+
+    // realtime preview (video plays, we mirror it)
+    let previewing = true;
+    function preview() {
+      if (!previewing) return;
+      draw("preview", video.currentTime);
+      requestAnimationFrame(preview);
+    }
+    video.play().catch(() => {});
+    preview();
+
+    // Build the media spec + capture length for the chosen mapping.
+    function configFor(mode) {
+      if (mode === "slowmo") {
+        return { spec: { element: video, offset: 0, rate: 0.5 }, timeLimit: D / 0.5, name: "video-slowmo" };
+      }
+      if (mode === "pingpong") {
+        const time = (t) => { const x = t % (2 * D); return x <= D ? x : 2 * D - x; };
+        return { spec: { element: video, time }, timeLimit: 2 * D, name: "video-pingpong" };
+      }
+      return { spec: video, timeLimit: D, name: "video" }; // identity
+    }
+
+    recBtn.addEventListener("click", async () => {
+      previewing = false; video.pause();
+      recBtn.disabled = true; modeSel.disabled = true;
+
+      const { spec, timeLimit, name } = configFor(modeSel.value);
+      const framerate = 30;
+      const cap = new CCapture({ format: "webm", framerate, timeLimit, media: spec, name });
+      cap.on("stop", () => {
+        status.textContent = `Saved ${name}.webm — ${cap.frameCount} frames.`;
+        recBtn.disabled = false; modeSel.disabled = false;
+        previewing = true; video.play().catch(() => {}); preview();
+      });
+
+      await cap.start();
+      (function render() {
+        if (!cap.capturing) return;
+        requestAnimationFrame(render);
+        draw(modeSel.value, video.currentTime); // currentTime is the mapped (warped) time
+        status.textContent = `Capturing frame ${cap.frameCount}…`;
+        cap.capture(canvas);
+      })();
+    });
+  </script>
+</body>

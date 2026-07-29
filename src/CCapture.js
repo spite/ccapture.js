@@ -3,6 +3,31 @@ import { TimeWarp } from "./TimeWarp.js";
 import { nextTask } from "./utils.js";
 
 /**
+ * Normalize one `media` entry into `{ element, map }`, where `map` turns capture
+ * seconds into the element's `currentTime`. Accepts a bare `<video>`/`<audio>`,
+ * or `{ element, time?, offset?, rate? }`:
+ *   - `time`  — a `(captureSeconds) => mediaSeconds` callback (most general)
+ *   - `offset` / `rate` — sugar for the linear `offset + captureSeconds * rate`
+ * With no mapping, media time == capture time (the default, 1:1 from zero).
+ */
+function normalizeMedia(spec) {
+  if (!spec) return { element: null, map: null };
+  // A MediaSpec is distinguished by its `element` field; anything else is
+  // treated as the media element itself (backward-compatible with a bare pass).
+  if (!spec.element) return { element: spec, map: null };
+  const { element, time, offset, rate } = spec;
+  let map = null;
+  if (typeof time === "function") {
+    map = time;
+  } else if (offset !== undefined || rate !== undefined) {
+    const o = offset || 0;
+    const r = rate === undefined ? 1 : rate;
+    map = (s) => o + s * r;
+  }
+  return { element, map };
+}
+
+/**
  * CCapture — the unified, plug-and-play recorder.
  *
  * Composes a {@link FrameWrap} (canvas capture: motion blur + encoding) with a
@@ -97,9 +122,15 @@ class CCapture {
   async start() {
     this.timewarp.start();
     if (this.params.media) {
-      for (const el of [].concat(this.params.media)) this.timewarp.addMedia(el);
+      for (const spec of [].concat(this.params.media)) {
+        const { element, map } = normalizeMedia(spec);
+        if (element) this.timewarp.addMedia(element, map);
+      }
     }
     await this.framewrap.start();
+    // Seek registered media to the initial (possibly offset/mapped) time so the
+    // first captured frame is correct — a no-op when there's no media.
+    await this.timewarp.syncMedia();
   }
 
   /** Capture the just-drawn frame; auto-drives the loop (see class docs). */

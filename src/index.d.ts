@@ -9,6 +9,23 @@ export type BufferMode = "webp" | "png" | "raw";
 /** Constructor for a custom encoder (see FrameEncoder / BatchEncoder). */
 export type EncoderConstructor = new (params: CCaptureParams) => FrameEncoder;
 
+/** Maps capture time (seconds) to a media element's `currentTime` (seconds). */
+export type MediaTimeMap = (captureSeconds: number) => number;
+
+/** A media element with an optional capture→media time mapping. */
+export interface MediaSpec {
+  element: HTMLMediaElement;
+  /** Callback mapping capture seconds → media currentTime. Overrides offset/rate. */
+  time?: MediaTimeMap;
+  /** Linear sugar: media starts this many seconds in. Default 0. */
+  offset?: number;
+  /** Linear sugar: media seconds advanced per capture second. Default 1. */
+  rate?: number;
+}
+
+/** A `media` entry: a bare element, or an element plus a time mapping. */
+export type MediaOption = HTMLMediaElement | MediaSpec;
+
 /** Options accepted by CCapture / FrameWrap (and forwarded to encoders/TimeWarp). */
 export interface CCaptureParams {
   /** Output format / registered encoder name. Default "mp4". */
@@ -49,8 +66,15 @@ export interface CCaptureParams {
   autoSaveTime?: number;
   /** Seconds to skip into the animation before the first frame. Default 0. */
   startTime?: number;
-  /** Video/audio element(s) to frame-step in lockstep with capture. */
-  media?: HTMLMediaElement | HTMLMediaElement[] | null;
+  /**
+   * Video/audio element(s) to frame-step in lockstep with capture.
+   *
+   * A bare element uses media time == capture time (1:1 from zero). To drive an
+   * element from your own timeline, pass `{ element, time }` with a
+   * `(captureSeconds) => mediaSeconds` callback, or the linear sugar
+   * `{ element, offset?, rate? }` (→ `offset + captureSeconds * rate`).
+   */
+  media?: MediaOption | MediaOption[] | null;
   /** Hook HTMLMediaElement (currentTime/play) to frame-step media. Default true. */
   hookMedia?: boolean;
 
@@ -134,8 +158,14 @@ export class TimeWarp {
   step(dt?: number): void;
   /** Like step(), but awaits media seeks before dispatching. */
   stepAsync(dt?: number): Promise<void>;
-  /** Register a media element to frame-step. */
-  addMedia(element: HTMLMediaElement): void;
+  /**
+   * Register a media element to frame-step. Pass an optional `map` to drive its
+   * `currentTime` from your own timeline: `currentTime = map(captureSeconds)`.
+   * Called automatically (identity mapping) when code reads/writes `currentTime`.
+   */
+  addMedia(element: HTMLMediaElement, map?: MediaTimeMap): void;
+  /** Seek all registered media to the current frame time and await it (no advance). */
+  syncMedia(): Promise<void>;
 }
 
 /** The pristine native timing functions captured at load. */
