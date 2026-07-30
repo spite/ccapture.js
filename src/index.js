@@ -10,6 +10,10 @@ export { TimeWarp } from "./TimeWarp.js";
 // Frame-accurate audio analysis (offline).
 export { renderAudioFrames } from "./AudioTimeline.js";
 
+// Deterministic video frames via WebCodecs (demux + decode; MP4). mp4box.js is
+// lazy-loaded only when createVideoSource() is actually called.
+export { createVideoSource, VideoSource } from "./VideoSource.js";
+
 // Yield a macrotask (used to keep the tab responsive in manual capture loops).
 export { nextTask } from "./utils.js";
 

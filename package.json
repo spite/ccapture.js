@@ -1,6 +1,6 @@
 {
   "name": "ccapture.js",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Capture canvas-based animations at a fixed framerate, with motion blur and modern encoders (WebCodecs).",
   "type": "module",
   "main": "src/index.js",
@@ -13,6 +13,7 @@
     "./CCapture": { "types": "./src/CCapture.d.ts", "import": "./src/CCapture.js" },
     "./TimeWarp": { "types": "./src/TimeWarp.d.ts", "import": "./src/TimeWarp.js" },
     "./FrameWrap": { "types": "./src/FrameWrap.d.ts", "import": "./src/FrameWrap.js" },
+    "./video-source": { "types": "./src/VideoSource.d.ts", "import": "./src/VideoSource.js" },
     "./umd": "./build/ccapture.umd.min.js"
   },
   "files": [

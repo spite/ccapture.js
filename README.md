@@ -491,17 +491,50 @@ draws, so `drawImage`/`texImage2D` gets the seeked frame rather than a stale one
 > ⚠️ **Paused-video decode is browser/GPU-dependent.** Frame-stepping *pauses* the
 > `<video>` and seeks it. On some GPUs/drivers a paused, seeked video won't produce
 > a decodable frame at all — `drawImage` (and even `createImageBitmap`) come back
-> **black** — while the very same video draws fine when playing. This is a Chrome
-> hardware-decode limitation, not something the library can force. If you hit it,
-> the reliable path is to decode frames yourself with the **WebCodecs
-> `VideoDecoder`** (demux + decode by timestamp) and draw those, rather than
-> relying on the `<video>` element. Keeping the element in the DOM and composited
-> helps on the GPUs where it works at all.
+> **black** — while the very same video draws fine when playing. This is a
+> hardware-decode limitation, not something the library can force. When you hit it,
+> use **`createVideoSource`** (below), which decodes with WebCodecs and can force a
+> software decoder. Keeping the `<video>` in the DOM and composited helps on the
+> GPUs where the element works at all.
 
 > **three.js `VideoTexture`:** deterministic capture *pauses* the video, so
 > `requestVideoFrameCallback` won't fire a steady stream on its own. Set
 > `videoTexture.needsUpdate = true` after each captured frame so the seeked frame
 > is re-uploaded to the GPU (subject to the same paused-decode caveat above).
+
+**Deterministic frames via WebCodecs (`createVideoSource`)**
+
+For guaranteed frame-accuracy — no `<video>` element, no paused-seek black-frame
+quirk — decode the file yourself with WebCodecs. `createVideoSource()` demuxes an
+MP4 and decodes exact frames on demand; `frameAt(seconds)` returns the precise
+`VideoFrame`, which you draw (and which composes with your own timeline / the
+`media` time-mapping):
+
+```js
+import { CCapture, createVideoSource } from "ccapture.js";
+// or the opt-in subpath: import { createVideoSource } from "ccapture.js/video-source";
+
+const src = await createVideoSource("clip.mp4");        // URL / Blob / ArrayBuffer
+const capturer = new CCapture({ format: "mp4", framerate: 30, frameLimit: src.frameCount });
+
+await capturer.record(canvas, async (frame) => {
+  const t = frame / 30;                                  // capture seconds
+  const vf = await src.frameAt(t * 0.5);                 // e.g. 0.5× slow-motion
+  ctx.drawImage(vf, 0, 0, canvas.width, canvas.height);  // exact, never black
+});
+src.close();
+```
+
+- **MP4 only** for now (H.264/H.265/AV1/VP9 in an MP4 container); WebM is planned.
+- Requires WebCodecs `VideoDecoder` (Chrome, Edge, Safari, recent Firefox).
+- Defaults to a **software decoder** (`hardwareAcceleration: "prefer-software"`)
+  for determinism — flaky H.264 *hardware* decoders (the same ones that black out
+  a paused `<video>`) also abort under WebCodecs. Override with
+  `{ hardwareAcceleration: "prefer-hardware" }` if you want HW decode.
+- `mp4box.js` is **lazy-loaded from a CDN** only when `createVideoSource()` runs;
+  vendor it with `{ mp4box }` or `{ mp4boxUrl }`.
+- The returned `VideoFrame` is owned by the source — draw/encode it immediately,
+  don't `close()` it; call `src.close()` when finished.
 
 **Frame-accurate audio-reactive visuals**
 

@@ -4,6 +4,27 @@ Notable changes to CCapture. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com); the project uses
 [semantic versioning](https://semver.org).
 
+## [2.1.0] — 2026-07-30
+
+### Added
+- **Media time mapping** — the `media` option now accepts `{ element, time }`
+  (a `captureSeconds → mediaSeconds` callback) and `{ element, offset, rate }`
+  sugar, so a `<video>`/`<audio>` can be driven from your own timeline instead of
+  only "media time = capture time". `TimeWarp.addMedia(el, map)` + a public
+  `TimeWarp.syncMedia()`; a bare element keeps the 1:1 default.
+- **WebCodecs video source** — `createVideoSource()` / `VideoSource` (also the
+  `ccapture.js/video-source` subpath) demux an MP4 (mp4box.js, lazy-loaded) and
+  decode exact frames via `VideoDecoder`. `frameAt(seconds)` returns the precise
+  `VideoFrame`, bypassing the `<video>` element. Defaults to a software decoder
+  (`hardwareAcceleration: "prefer-software"`) for reliability. MP4 only for now.
+- Examples: `video-map` (time mapping) and `video-webcodecs` (decode + capture).
+
+### Fixed
+- Frame-stepped `<video>` now waits for the seeked frame to actually decode
+  (`seeked` + `createImageBitmap`) before drawing, avoiding stale/blank frames.
+  Note: a paused, seeked `<video>` can still come back black on flaky H.264
+  hardware decoders — use `createVideoSource` (software decode) in that case.
+
 ## [2.0.0] — 2026-07-27
 
 Ground-up rewrite for modern browsers. Full notes in the
