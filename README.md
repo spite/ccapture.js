@@ -4,6 +4,8 @@ Capture canvas-based animations at a **fixed framerate**, with motion blur and
 modern encoders — a ground-up rewrite of [CCapture.js](https://github.com/spite/ccapture.js)
 (ES modules, WebCodecs, GPU motion blur, `async`/`await`).
 
+[![npm](https://img.shields.io/npm/v/ccapture.js.svg)](https://www.npmjs.com/package/ccapture.js)
+
 Your animation renders as fast (or as slowly) as it needs to; CCapture lies to
 it about what time it is, so the exported video is perfectly smooth at exactly
 the framerate you asked for — 30, 60, 240, whatever. Record a 4K frame that takes
